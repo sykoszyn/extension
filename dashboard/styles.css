@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens — SykosTracker "Ember" identity. Dark only, by design. */
+:root,
+:host {
+  --st-bg: #07080a;
+  --st-panel: #0f1014;
+  --st-line: rgba(255, 255, 255, 0.07);
+  --st-ember: #ff6a1f;
+  --st-blood: #ef3346;
+  color-scheme: dark;
+}
+
+@layer base {
+  .st-root {
+    font-family: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #f2f3f5;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'tnum' 1, 'cv11' 1;
+  }
+  .st-root ::selection {
+    background: rgba(255, 106, 31, 0.35);
+  }
+  .st-root :focus-visible {
+    outline: 2px solid var(--st-ember);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .st-card {
+    @apply relative rounded-xl border border-white/[0.06] bg-ink-900/90;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -18px rgba(0, 0, 0, 0.9);
+  }
+  .st-label {
+    @apply font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-fog-500;
+  }
+  .st-num {
+    @apply font-display font-semibold tabular-nums tracking-tight;
+  }
+  .st-btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition
+      disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .st-btn-primary {
+    @apply st-btn bg-ember-500 text-ink-950 hover:bg-ember-400 active:bg-ember-600;
+  }
+  .st-btn-ghost {
+    @apply st-btn border border-white/10 bg-white/[0.03] text-fog-100 hover:border-white/20 hover:bg-white/[0.07];
+  }
+  .st-input {
+    @apply w-full rounded-lg border border-white/10 bg-ink-950/80 px-3 py-2 text-[13px] text-fog-100 placeholder:text-fog-500
+      focus:border-ember-500/70 focus:outline-none;
+  }
+  .st-table th {
+    @apply st-label whitespace-nowrap px-3 py-2 text-left font-semibold;
+  }
+  .st-table td {
+    @apply whitespace-nowrap border-t border-white/[0.05] px-3 py-2 tabular-nums;
+  }
+  .st-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #2a2e37 transparent;
+  }
+}
+
+/* Diagonal hairline texture used on hero surfaces */
+.st-hatch {
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 9px);
+}
+.st-glow {
+  background: radial-gradient(120% 140% at 0% 0%, rgba(255, 106, 31, 0.16), transparent 55%),
+    radial-gradient(90% 120% at 100% 0%, rgba(239, 51, 70, 0.1), transparent 60%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-root *,
+  .st-root *::before,
+  .st-root *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
