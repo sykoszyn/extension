@@ -6,3 +6,4 @@ dist
 !.env.example
 .wrangler
 dist-e2e
+dist-store

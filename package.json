@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "node scripts/e2e.mjs",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs",
+    "store": "node scripts/store-assets.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

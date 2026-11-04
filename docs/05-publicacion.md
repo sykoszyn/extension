@@ -13,7 +13,7 @@ versión en `package.json`: el manifest la lee de ahí.
 
 * [ ] Prueba real con una clave de FACEIT: perfil, PvP, historial, sala y Auto Accept (este último solo en modo aviso, si no quieres arriesgar).
 * [ ] Publica la política de privacidad ([06-privacidad.md](06-privacidad.md)) en una URL pública.
-* [ ] Capturas de 1280×800 (puedes partir de las de `npm run build && node scripts/e2e.mjs`, en `dist/e2e/`, que usan datos de prueba; para la tienda conviene hacerlas con datos reales).
+* [ ] Imágenes de la tienda: `npm run store` genera en `dist/store/` cinco capturas de 1280×800, el mosaico pequeño de 440×280 y el marquee de 1400×560, desde la extensión real con datos de demostración.
 * [ ] Justifica cada permiso (tabla de abajo).
 * [ ] Aclara que SykosTracker **no está afiliado a FACEIT** y no uses sus logotipos.
 * [ ] Publica el Worker y pon su URL en `sykos.config.json` **antes** de `npm run pack` ([08-servidor-cloudflare.md](08-servidor-cloudflare.md)).
