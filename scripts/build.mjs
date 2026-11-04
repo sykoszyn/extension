@@ -21,10 +21,8 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const r = (...p) => path.join(root, ...p);
 const out = r('dist', '_build');
 const alias = { '@shared': r('shared'), '@ext': r('extension'), '@dash': r('dashboard') };
-// Optional publisher-supplied FACEIT *client-side* key (never a server-side key). Empty by default.
-const bundledKey = (process.env.SYKOS_FACEIT_CLIENT_KEY ?? '').trim();
-if (bundledKey) console.log('! Bundling a FACEIT client-side key from SYKOS_FACEIT_CLIENT_KEY');
-const define = { 'process.env.NODE_ENV': JSON.stringify('production'), __SYKOS_BUNDLED_KEY__: JSON.stringify(bundledKey) };
+// No API key is ever compiled into the extension: each user pastes their own in Settings.
+const define = { 'process.env.NODE_ENV': JSON.stringify('production') };
 const targets = process.argv.slice(2).length ? process.argv.slice(2) : TARGETS;
 const pkg = JSON.parse(await readFile(r('package.json'), 'utf8'));
 

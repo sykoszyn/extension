@@ -13,8 +13,9 @@ export interface AutoAcceptSettings {
 
 export interface Settings {
   /**
-   * The user's own FACEIT *client-side* API key. Stored only in this browser
-   * (storage.local) and sent only to open.faceit.com.
+   * The user's own FACEIT Data API key (App Studio issues server-side keys).
+   * Stored only in this browser (storage.local), sent only to open.faceit.com,
+   * never bundled into the extension.
    */
   faceitApiKey: string;
   myNickname: string;

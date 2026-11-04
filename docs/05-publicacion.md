@@ -16,9 +16,8 @@ versión en `package.json`: el manifest la lee de ahí.
 * [ ] Capturas de 1280×800 (puedes partir de las de `npm run build && node scripts/e2e.mjs`, en `dist/e2e/`, que usan datos de prueba; para la tienda conviene hacerlas con datos reales).
 * [ ] Justifica cada permiso (tabla de abajo).
 * [ ] Aclara que SykosTracker **no está afiliado a FACEIT** y no uses sus logotipos.
-* [ ] Decide cómo se autentica la API: clave del usuario (por defecto) o clave
-      client-side incluida al compilar (`SYKOS_FACEIT_CLIENT_KEY`). Explícalo en
-      la ficha: «necesita una clave gratuita de developers.faceit.com».
+* [ ] Explica en la ficha que hace falta **una API key propia y gratuita** de
+      developers.faceit.com (App Studio). El paquete no lleva ninguna clave.
 
 | Permiso | Justificación |
 |---|---|

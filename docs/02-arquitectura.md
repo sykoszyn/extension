@@ -20,7 +20,7 @@ Todo ocurre dentro de la extensión: no hay web, ni servidor, ni cuenta propia.
 │     · escaneo progresivo del historial (PvP / Intel)                │
 │     · registro del ELO observado                                    │
 │                                                                     │
-│  storage.local: ajustes, clave client-side, favoritos, búsquedas,   │
+│  storage.local: ajustes, tu API key, favoritos, búsquedas,          │
 │                 preferencias de Auto Accept                         │
 │  IndexedDB:     caché de la API, historial descubierto, ELO         │
 └────────────────┬────────────────────────────────────────────────────┘
@@ -80,10 +80,11 @@ Todo ocurre dentro de la extensión: no hay web, ni servidor, ni cuenta propia.
 * Sin cuenta propia, sin servidor y sin telemetría. La única conexión externa es
   `open.faceit.com` (comprobado en el e2e).
 * Ni contraseñas, ni cookies, ni tokens de FACEIT. Lo único que se guarda del
-  usuario es su nickname público, su ID y su clave client-side, todo en
+  usuario es su nickname público, su ID y su propia API key, todo en
   `storage.local`.
-* No se puede usar una clave server-side (secreta) sin servidor, así que la
-  extensión solo trabaja con claves client-side (ver
+* La API key (server-side, la que emite FACEIT) es **la del propio usuario**. No
+  va en el paquete, la extensión nunca la envía a otro sitio que no sea
+  `open.faceit.com`, y `storage.local` no es accesible para las páginas web (ver
   [04-clave-faceit-api.md](04-clave-faceit-api.md)).
 * Peticiones con `credentials: 'omit'` y sin `Referer`, y solo a una lista de
   rutas permitidas de solo lectura.

@@ -3,7 +3,7 @@
 ## Requisitos
 
 * Node.js 20 o superior (probado con Node 22) y npm.
-* Una clave **client-side** de FACEIT, gratuita (ver [04-clave-faceit-api.md](04-clave-faceit-api.md)).
+* Tu propia API key de FACEIT, gratuita (es de tipo server-side; ver [04-clave-faceit-api.md](04-clave-faceit-api.md)).
   No hace falta ningún servidor ni cuenta propia.
 
 ## Compilar
@@ -63,7 +63,7 @@ consulta [05-publicacion.md](05-publicacion.md).
 ## Primer uso
 
 1. Pulsa el icono de SykosTracker → **Configuración** (la página se abre sola al instalar).
-2. **Conexión con FACEIT**: pega tu clave client-side y pulsa **Guardar y probar**.
+2. **Conexión con FACEIT**: pega tu API key y pulsa **Guardar y probar**.
 3. **Tu cuenta**: escribe tu nickname y pulsa **Vincular**.
 4. El popup muestra tu perfil, ELO, win rate y últimas partidas. **Análisis
    completo** abre la página interna de la extensión.

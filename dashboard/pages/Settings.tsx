@@ -46,7 +46,7 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
   const [nick, setNick] = useState(settings.myNickname);
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [keySource, setKeySource] = useState<'user' | 'bundled' | 'none' | null>(null);
+  const [keySource, setKeySource] = useState<'user' | 'none' | null>(null);
   useEffect(() => setDraft(settings), [settings]);
   useEffect(() => {
     rpc('api.status', {})
@@ -57,7 +57,7 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
   const saveConnection = async () => {
     setBusy(true);
     setStatus(null);
-    await update({ faceitApiKey: draft.faceitApiKey.trim() });
+    await update({ faceitApiKey: draft.faceitApiKey.trim().replace(/^Bearer\s+/i, '') });
     setKeySource((await rpc('api.status', {}).catch(() => ({ keySource: 'none' as const }))).keySource);
     const r = await rpc('api.test', {}).catch((e) => ({ ok: false, message: String(e.message) }));
     setStatus({ ok: r.ok, msg: r.message });
@@ -106,20 +106,24 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
             intermedios ni cuentas propias. FACEIT exige una clave de API para cualquier consulta.
           </p>
           <Field
-            label="Tu FACEIT client-side API key"
+            label="Tu FACEIT API key"
             hint={
               <>
                 Gratis en{' '}
                 <a className="text-ember-400 hover:underline" href="https://developers.faceit.com" target="_blank" rel="noreferrer">
                   developers.faceit.com
                 </a>{' '}
-                → App Studio → tu app → API Keys → tipo <b>Client side</b>. Se guarda solo en este navegador.
+                → App Studio → tu app → API Keys. FACEIT da claves de tipo <b>Server side</b>: es la correcta. Se guarda solo en este navegador.
               </>
             }
           >
             <input className="st-input font-mono" type="password" autoComplete="off" value={draft.faceitApiKey} onChange={(e) => setDraft({ ...draft, faceitApiKey: e.target.value })} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
           </Field>
-          <Notice tone="warn">Usa solo una clave de tipo client-side. Nunca pegues una clave server-side ni la contraseña de tu cuenta.</Notice>
+          <Notice tone="warn">
+            Es una clave <b>personal y secreta</b>: SykosTracker solo la guarda en este navegador y solo la envía a <span className="font-mono">open.faceit.com</span>. No la
+            compartas, no la publiques ni la pegues en ningún otro sitio. Si crees que se ha filtrado, revócala en App Studio y crea otra. Nunca pongas aquí la contraseña de tu
+            cuenta.
+          </Notice>
           <div className="flex flex-wrap items-center gap-3">
             <button className="st-btn-primary" disabled={busy} onClick={saveConnection}>
               Guardar y probar
@@ -129,7 +133,7 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
               <span className="text-[12px] text-fog-400">
                 Clave en uso:{' '}
                 <b className={keySource === 'none' ? 'text-blood-400' : 'text-fog-100'}>
-                  {keySource === 'user' ? 'la tuya' : keySource === 'bundled' ? 'incluida en esta versión' : 'ninguna'}
+                  {keySource === 'user' ? 'configurada' : 'ninguna'}
                 </b>
               </span>
             )}

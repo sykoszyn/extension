@@ -7,42 +7,34 @@ no usa cuentas propias y no depende de Supabase ni de ningún otro servicio. La
 ## La limitación que conviene conocer
 
 **La FACEIT Data API no admite peticiones anónimas.** Todas las llamadas
-necesitan la cabecera `Authorization: Bearer <API key>`. FACEIT ofrece dos tipos
-de clave en App Studio:
+necesitan la cabecera `Authorization: Bearer <API key>`. Hoy, App Studio de
+FACEIT solo emite claves **server-side**.
 
-| Tipo | Uso previsto | ¿Puede ir en una extensión? |
+Una clave server-side es **secreta**. Por eso SykosTracker sigue estas reglas:
+
+* **Nunca va dentro de la extensión publicada.** El código no lleva ninguna
+  clave, y la opción de incluir una al compilar se ha eliminado.
+* **Cada usuario pega la suya** en *Configuración*. Se guarda solo en el
+  `storage.local` de su navegador, que no puede leer ninguna web (tampoco
+  faceit.com), y solo la usa el service worker para llamar a `open.faceit.com`.
+* Es tu clave y tu cuota. Si crees que se ha filtrado, revócala en App Studio y
+  crea otra.
+
+Alternativas:
+
+| Opción | Ventaja | Inconveniente |
 |---|---|---|
-| **Server side** | Servidores. Es secreta | **No.** Si se metiera en el código, cualquiera podría extraerla. SykosTracker no la acepta ni la usa |
-| **Client side** | Código que se ejecuta en el navegador o en el cliente | **Sí.** Es el tipo pensado para aplicaciones sin servidor |
+| **Clave propia de cada usuario (la que se usa)** | Sin servidor ni cuentas; cada uno tiene su cuota y su riesgo | Cada usuario tiene que crear la suya (2 minutos) |
+| Incluir una clave server-side en el paquete | Funciona nada más instalarla | **Descartada**: cualquiera podría extraerla del paquete |
+| Backend propio con la clave guardada en el servidor | Los usuarios no necesitan clave | Hace falta un servidor; descartado por los requisitos del producto. Si algún día se quiere, solo habría que cambiar `extension/background/transport.ts` |
 
-Para tener funciones como Player vs Player, Lobby Analyzer y el resto sin un
-backend, hay estas opciones, de la más recomendable a la menos:
-
-1. **Cada usuario usa su propia clave client-side (opción por defecto).** Es
-   gratis y se crea en dos minutos (pasos abajo). Se guarda solo en el
-   `storage.local` de su navegador y solo se envía a `open.faceit.com`. Cada
-   usuario tiene su propia cuota y nadie depende de la clave de otro.
-2. **El editor incluye una clave client-side al compilar (opcional).** Sirve para
-   que la extensión funcione nada más instalarla, sin que el usuario cree una clave:
-   ```bash
-   SYKOS_FACEIT_CLIENT_KEY=<clave-client-side> npm run build
-   ```
-   Contras: todos los usuarios comparten la cuota de esa clave, la clave se puede
-   leer en el paquete (por eso tiene que ser client-side) y, si FACEIT la revoca,
-   la extensión deja de funcionar para todos. Si el usuario pega su propia clave,
-   esa tiene prioridad. Revisa las condiciones de la API de FACEIT antes de
-   distribuir una clave incluida.
-3. **Un backend propio con una clave server-side.** Es la única forma de usar una
-   clave secreta. **No está incluido**, porque el producto no debe depender de un
-   servidor. Si algún día se necesita, solo habría que cambiar
-   `extension/background/transport.ts`.
-
-## Crear tu clave client-side
+## Crear tu clave
 
 1. Entra en <https://developers.faceit.com> con tu cuenta de FACEIT.
 2. **App Studio → Create App**: pon un nombre (p. ej. «SykosTracker personal»).
-3. Dentro de la app: **API Keys → Create** y elige **Client side**.
-4. Copia la clave.
+3. Dentro de la app: **API Keys → Create**. El tipo que ofrece FACEIT es
+   **Server side**, y es el correcto.
+4. Copia la clave. Tiene forma de UUID: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`.
 5. En SykosTracker, abre el icono → **Configuración → Conexión con FACEIT**, pega
    la clave y pulsa **Guardar y probar**. Debe aparecer «Conexión directa con
    FACEIT correcta».
@@ -71,7 +63,7 @@ FACEIT limita las peticiones por clave. SykosTracker gasta poco:
 
 | Mensaje | Causa |
 |---|---|
-| «Añade tu clave client-side de FACEIT…» | No hay ninguna clave configurada |
-| «FACEIT ha rechazado la clave de API (401)» | Clave no válida, revocada o de otro tipo |
+| «Añade tu API key de FACEIT…» | No hay ninguna clave configurada |
+| «FACEIT ha rechazado la clave de API (401)» | Clave mal copiada o revocada |
 | «Límite de peticiones de FACEIT alcanzado» | Cuota agotada; SykosTracker reintenta solo |
 | «No encontrado en FACEIT (404)» | El nickname o la partida no existen |

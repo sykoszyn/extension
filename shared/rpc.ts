@@ -34,7 +34,7 @@ export interface RpcMap {
   'notify.matchFound': { req: { accepted: boolean }; res: true };
   'cache.clear': { req: Record<string, never>; res: true };
   'api.test': { req: Record<string, never>; res: { ok: boolean; message: string } };
-  'api.status': { req: Record<string, never>; res: { keySource: 'user' | 'bundled' | 'none' } };
+  'api.status': { req: Record<string, never>; res: { keySource: 'user' | 'none' } };
   'lobby.intel': { req: { matchId: string; scanOlder?: boolean }; res: LobbyIntel };
 }
 

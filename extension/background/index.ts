@@ -53,8 +53,7 @@ const handlers: Handlers = {
       const s = await getSettings();
       const probe = s.myNickname || 's1mple';
       const p = await client.resolvePlayer(probe, true);
-      const src = resolveKey(s).source === 'user' ? 'tu clave' : 'la clave incluida en esta versión';
-      return { ok: true, message: `Conexión directa con FACEIT correcta (${src}). Encontrado: ${p.nickname}${p.elo ? ` (${p.elo} ELO)` : ''}.` };
+      return { ok: true, message: `Conexión directa con FACEIT correcta. Encontrado: ${p.nickname}${p.elo ? ` (${p.elo} ELO)` : ''}.` };
     } catch (e) {
       return { ok: false, message: String((e as Error).message) };
     }

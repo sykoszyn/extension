@@ -40,14 +40,14 @@ npm run build
 ```
 
 Carga `dist/chrome` (o `dist/firefox`, etc.) como extensión descomprimida. Después,
-en *Configuración*, pega tu clave **client-side** de FACEIT (es gratis, en
-developers.faceit.com) y vincula tu nickname.
+en *Configuración*, pega **tu propia** API key de FACEIT (es gratis, en
+developers.faceit.com → App Studio) y vincula tu nickname.
 
 > **Por qué hace falta una clave.** La FACEIT Data API no admite peticiones
-> anónimas. Sin servidor, la única opción segura es una clave **client-side**:
-> la tuya, guardada solo en tu navegador, o una que el editor incluya al compilar
-> (`SYKOS_FACEIT_CLIENT_KEY`). Nunca se usa una clave server-side secreta.
-> Detalles y alternativas en [docs/04](docs/04-clave-faceit-api.md).
+> anónimas, y App Studio solo emite claves **server-side**, que son secretas. Por
+> eso la extensión **no lleva ninguna clave**: cada usuario pega la suya, se
+> guarda solo en su navegador y solo se envía a `open.faceit.com`. Más detalles
+> en [docs/04](docs/04-clave-faceit-api.md).
 
 ## Documentación
 

@@ -12,7 +12,7 @@ SykosTracker es una extensión de navegador independiente. **No tiene servidores
 | Ajustes, favoritos y búsquedas recientes | `storage.local` de tu navegador | Funcionamiento de la interfaz |
 | Respuestas de la FACEIT Data API (estadísticas públicas) e historial de enfrentamientos descubierto | IndexedDB de tu navegador | No repetir peticiones; Player vs Player y Enemy Intel |
 | ELO observado de los jugadores que consultas | IndexedDB de tu navegador | Gráfico de evolución del ELO |
-| Tu clave client-side de FACEIT | `storage.local` de tu navegador | Autenticar las peticiones a FACEIT |
+| Tu API key de FACEIT | `storage.local` de tu navegador (nunca sale salvo hacia `open.faceit.com`) | Autenticar las peticiones a FACEIT |
 | Preferencias de Auto Accept | `storage.local` de tu navegador | Funcionamiento de Auto Accept |
 
 ## Qué no hace SykosTracker

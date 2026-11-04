@@ -20,17 +20,14 @@
 ### Autenticación (sin backend)
 
 La Data API **siempre** necesita `Authorization: Bearer <API key>`; no admite
-peticiones anónimas. SykosTracker no tiene servidor, así que usa claves
-**client-side**, el tipo que FACEIT ofrece para código que se ejecuta en el
-navegador:
+peticiones anónimas. App Studio de FACEIT emite claves **server-side**, que son
+secretas. SykosTracker no tiene servidor, así que:
 
-* por defecto, la clave del propio usuario, guardada solo en su `storage.local`;
-* opcionalmente, una clave client-side que el editor incluye al compilar
-  (`SYKOS_FACEIT_CLIENT_KEY`).
+* no incluye ninguna clave en el paquete;
+* cada usuario pega **su propia** clave en *Configuración*; se guarda solo en su
+  `storage.local` y solo la usa el background para llamar a `open.faceit.com`.
 
-Las claves **server-side** son secretas y no se pueden usar sin un servidor. Las
-ventajas, inconvenientes y alternativas de cada opción están en
-[04-clave-faceit-api.md](04-clave-faceit-api.md).
+Alternativas descartadas y motivos: [04-clave-faceit-api.md](04-clave-faceit-api.md).
 
 ## 2. Endpoints usados (todos `GET`, solo lectura)
 
