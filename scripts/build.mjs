@@ -9,7 +9,11 @@
  *
  * Usage: node scripts/build.mjs [chrome|edge|brave|opera|firefox ...]
  *
- * Config: sykos.config.json → { "proxyUrl": "https://sykostracker-proxy.<you>.workers.dev" }
+ * Config: sykos.config.json → {
+ *   "proxyUrl": "https://sykostracker-proxy.<you>.workers.dev",
+ *   "twitter":  "https://x.com/<you>",          (optional, shown in popup + dashboard)
+ *   "donate":   "https://ko-fi.com/<you>"       (optional)
+ * }
  * (env SYKOS_PROXY_URL overrides it; env SYKOS_DIST changes the output folder).
  * The proxy URL is public; the FACEIT key stays a secret inside the Worker.
  */
@@ -31,7 +35,19 @@ const cfg = existsSync(r('sykos.config.json')) ? JSON.parse(await readFile(r('sy
 const proxyUrl = String(process.env.SYKOS_PROXY_URL ?? cfg.proxyUrl ?? '').trim().replace(/\/+$/, '');
 if (proxyUrl && !/^https:\/\/[^/]+$/.test(proxyUrl)) throw new Error(`proxyUrl must be https://host with no path, got "${proxyUrl}"`);
 console.log(proxyUrl ? `› proxy: ${proxyUrl}` : '› proxy: none (users must paste their own FACEIT API key)');
-const define = { 'process.env.NODE_ENV': JSON.stringify('production'), __SYKOS_PROXY_URL__: JSON.stringify(proxyUrl) };
+// Creator links shown in the popup / dashboard (empty = hidden). Must be https URLs.
+const link = (name) => {
+  const v = String(cfg[name] ?? '').trim();
+  if (v && !/^https:\/\/\S+$/.test(v)) throw new Error(`${name} in sykos.config.json must be an https:// link, got "${v}"`);
+  return v;
+};
+const links = { twitter: link('twitter'), donate: link('donate') };
+console.log(`› links: twitter=${links.twitter || '—'} donate=${links.donate || '—'}`);
+const define = {
+  'process.env.NODE_ENV': JSON.stringify('production'),
+  __SYKOS_PROXY_URL__: JSON.stringify(proxyUrl),
+  __SYKOS_LINKS__: JSON.stringify(links),
+};
 const targets = process.argv.slice(2).length ? process.argv.slice(2) : TARGETS;
 const pkg = JSON.parse(await readFile(r('package.json'), 'utf8'));
 

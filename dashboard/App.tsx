@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Wordmark } from './components/Logo';
 import { PlayerSearch } from './components/PlayerSearch';
+import { CreatorLinks } from './components/CreatorLinks';
 import { Avatar, cx } from './components/ui';
 import { href, navigate, useHashRoute, type Page } from './hooks/useHashRoute';
 import { useSettings } from './hooks/useSettings';
@@ -85,6 +86,7 @@ export function App() {
               Vincula tu cuenta →
             </a>
           )}
+          <CreatorLinks className="mt-3" />
           <p className="mt-2">No afiliado a FACEIT.</p>
         </div>
       </aside>

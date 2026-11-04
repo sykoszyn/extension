@@ -53,6 +53,22 @@ descomprimida.
 > Cloudflare (`proxy/`). Si no configuras ningún servidor, cada usuario tendrá
 > que pegar su propia clave. Más detalles en [docs/04](docs/04-clave-faceit-api.md).
 
+## Tus enlaces (X / Twitter y donaciones)
+
+Se configuran en `sykos.config.json` y aparecen en el popup y en el menú del
+análisis completo. Si dejas uno vacío, no se muestra. Después de cambiarlos,
+ejecuta `npm run build`.
+
+```json
+{
+  "proxyUrl": "https://sykostracker-proxy.storealts.workers.dev",
+  "twitter": "https://x.com/sykoszyn",
+  "donate": ""
+}
+```
+
+En `donate` puedes poner cualquier enlace `https://` (Ko-fi, Cafecito, PayPal, Mercado Pago…).
+
 ## Documentación
 
 1. [Auditoría de la API y viabilidad](docs/01-auditoria-api.md): endpoints, qué datos existen y qué alternativas hay.

@@ -90,9 +90,13 @@ Vuelve a la carpeta principal del proyecto y edita `sykos.config.json`:
 
 ```json
 {
-  "proxyUrl": "https://sykostracker-proxy.<tu-subdominio>.workers.dev"
+  "proxyUrl": "https://sykostracker-proxy.<tu-subdominio>.workers.dev",
+  "twitter": "https://x.com/sykoszyn",
+  "donate": ""
 }
 ```
+
+(`twitter` y `donate` son tus enlaces del popup; si los dejas vacíos, no se muestran.)
 
 Recompila:
 

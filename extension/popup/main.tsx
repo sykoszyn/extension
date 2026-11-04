@@ -3,13 +3,14 @@
  *   1. not linked → "Tu nickname de FACEIT" + Guardar
  *   2. linked     → one compact profile card (ELO, win rate, K/D, last 5)
  *   3. Auto-aceptar partidas switch
- *   4. links: Análisis completo · Ajustes
+ *   4. links: Análisis completo · Ajustes · creator links (sykos.config.json)
  */
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getURL, openTab } from '@ext/compat/browser';
 import { LogoMark } from '@dash/components/Logo';
 import { AutoAcceptSwitch, NicknameForm } from '@dash/components/Simple';
+import { CreatorLinks } from '@dash/components/CreatorLinks';
 import { Avatar, ErrorBox, LevelBadge, ResultChip, Skeleton } from '@dash/components/ui';
 import { useRpc } from '@dash/hooks/useRpc';
 import { useSettings } from '@dash/hooks/useSettings';
@@ -96,6 +97,7 @@ function Popup() {
           Ajustes
         </button>
       </footer>
+      <CreatorLinks compact />
     </div>
   );
 }

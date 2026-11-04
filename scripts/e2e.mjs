@@ -16,7 +16,7 @@
  */
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -169,6 +169,12 @@ try {
     await pop.getByText('ELO', { exact: true }).waitFor();
     const h = await pop.evaluate(() => Math.round(document.getElementById('root').getBoundingClientRect().height));
     assert.ok(h <= 420, `popup should stay compact (${h}px)`);
+    const cfg = JSON.parse(await readFile(path.join(root, 'sykos.config.json'), 'utf8'));
+    if (cfg.twitter) {
+      const tw = pop.locator(`a[href="${cfg.twitter}"]`);
+      assert.equal(await tw.count(), 1, 'twitter link from sykos.config.json missing in popup');
+      assert.equal(await tw.getAttribute('target'), '_blank');
+    }
     await pop.screenshot({ path: path.join(out, '09-popup.png') });
     // Turning Auto Accept on asks once, inline.
     await pop.getByRole('switch', { name: 'Auto-aceptar partidas' }).click();
