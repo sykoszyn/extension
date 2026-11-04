@@ -13,8 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "node scripts/e2e.mjs",
-    "icons": "node scripts/icons.mjs",
-    "mock": "node scripts/mock-backend.mjs"
+    "icons": "node scripts/icons.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

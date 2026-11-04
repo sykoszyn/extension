@@ -22,6 +22,8 @@ describe('per-browser manifests', () => {
       expect(m.permissions.sort()).toEqual(['alarms', 'notifications', 'storage', 'unlimitedStorage']);
       expect(JSON.stringify(m)).not.toMatch(/cookies|webRequest|"tabs"|<all_urls>/);
       expect(m.content_scripts[0].matches).toEqual(['https://www.faceit.com/*']);
+      // Only the official FACEIT API — no developer backend.
+      expect(m.host_permissions).toEqual(['https://open.faceit.com/*']);
     }
   });
 });

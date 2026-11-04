@@ -1,8 +1,13 @@
 # SykosTracker
 
-**Analítica de Counter-Strike 2 para FACEIT**: perfiles, Player vs Player,
-historial de partidas, Lobby Analyzer de los 10 jugadores, rendimiento por mapa
-y comparación de equipos. Disponible para Chrome, Edge, Brave, Opera y Firefox.
+**Analítica de Counter-Strike 2 para FACEIT, entera dentro del navegador**:
+perfiles, Player vs Player, historial de partidas, Lobby Analyzer de los 10
+jugadores, Enemy Intelligence, rendimiento por mapa y comparación de equipos.
+Para Chrome, Edge, Brave, Opera y Firefox.
+
+**Sin web, sin servidor y sin cuenta propia.** Todo funciona dentro de la
+extensión, los datos se guardan en tu navegador y la única conexión externa es
+la API oficial de FACEIT.
 
 > SykosTracker es un proyecto independiente y **no está afiliado a FACEIT ni a
 > Valve**. Todas las estadísticas vienen de la FACEIT Data API oficial. Si un
@@ -17,10 +22,12 @@ y comparación de equipos. Disponible para Chrome, Edge, Brave, Opera y Firefox.
 | **Historial de partidas** | *Match History* | ID, fecha, mapa, resultado, score, equipos, jugadores, duración, scoreboard completo, **VER PARTIDA**, stats de cada jugador, filtros y orden |
 | **Lobby Analyzer** | Automático al entrar en una sala (durante el veto) | Los 10 jugadores: avatar, nivel, ELO, WR, K/D, ADR, HS%, partidas, forma, racha y últimos mapas, separados en YOUR TEAM vs ENEMY TEAM |
 | **Map Performance** | Sala · *Map Statistics* | Ventanas de 5/10/20 (y 50/100): partidas, WR, K/D, ADR y rachas por mapa, más tarjetas «JUGADOR — MAPA» |
+| **Enemy Intelligence** | Sala → *Intel* | Cuántas veces te has enfrentado a cada rival y tu récord contra él (desde tu historial local), sus mejores y peores mapas, quién llega más en forma, posibles premades (con la prueba) y tabla de veto por mapa |
 | **Lobby Strength** | Sala → *Fuerza* | Medias de cada equipo, diferencia de ELO, fortalezas y debilidades, y el **SPI**: índice propio con fórmula pública, que **no es una probabilidad** |
 | **Auto Accept** | faceit.com · popup · Settings | Opcional y **desactivado por defecto**. Hay que aceptar un aviso, tiene cuenta atrás cancelable y botón *Desactivar*. Si está apagado, avisa con notificación y sonido |
 | **Buscador global** | Dashboard y popup | Nickname, URL de FACEIT o ID de partida, con sugerencias, búsquedas recientes y favoritos |
-| **Dashboard** | Icono → *Abrir dashboard* | Overview, Player Comparison, Match History, Lobby Analyzer, Map Statistics, Favorites, Settings |
+| **Popup** | Icono de la extensión | Tu perfil, ELO, win rate, K/D, forma, últimas partidas, buscador, Auto Accept, *Análisis completo* y *Configuración* |
+| **Análisis completo** | Página interna `dashboard/index.html` | Overview, Player Comparison, Match History, Lobby Analyzer, Map Statistics, Favorites, Settings |
 
 ## Inicio rápido
 
@@ -32,16 +39,22 @@ npm install
 npm run build
 ```
 
-Carga `dist/chrome` (o `dist/firefox`, etc.) como extensión descomprimida y
-configura la conexión en *Settings*. Para probar sin clave de FACEIT, arranca el
-backend de prueba (`npm run mock`) y usa `http://localhost:8787` como URL.
+Carga `dist/chrome` (o `dist/firefox`, etc.) como extensión descomprimida. Después,
+en *Configuración*, pega tu clave **client-side** de FACEIT (es gratis, en
+developers.faceit.com) y vincula tu nickname.
+
+> **Por qué hace falta una clave.** La FACEIT Data API no admite peticiones
+> anónimas. Sin servidor, la única opción segura es una clave **client-side**:
+> la tuya, guardada solo en tu navegador, o una que el editor incluya al compilar
+> (`SYKOS_FACEIT_CLIENT_KEY`). Nunca se usa una clave server-side secreta.
+> Detalles y alternativas en [docs/04](docs/04-clave-faceit-api.md).
 
 ## Documentación
 
 1. [Auditoría de la API y viabilidad](docs/01-auditoria-api.md): endpoints, qué datos existen y qué alternativas hay.
 2. [Arquitectura](docs/02-arquitectura.md): módulos, caché, rate limit y seguridad.
 3. [Instalación](docs/03-instalacion.md): Chrome, Edge, Brave, Opera y Firefox.
-4. [FACEIT API y backend Supabase](docs/04-faceit-api-y-backend.md)
+4. [Clave de la FACEIT API (sin backend)](docs/04-clave-faceit-api.md)
 5. [Publicación en tiendas](docs/05-publicacion.md)
 6. [Política de privacidad](docs/06-privacidad.md)
 7. [Pruebas](docs/07-testing.md)
@@ -55,8 +68,7 @@ backend de prueba (`npm run mock`) y usa `http://localhost:8787` como URL.
 | `npm run pack` | Compila y crea los zip para las tiendas |
 | `npm run typecheck` | TypeScript estricto |
 | `npm test` | Pruebas unitarias (Vitest) |
-| `npm run e2e` | End-to-end con la extensión compilada en Chromium (requiere `build`) |
-| `npm run mock` | Backend de prueba con datos ficticios en `:8787` |
+| `npm run e2e` | End-to-end con la extensión compilada en Chromium y la API interceptada con fixtures (requiere `build`) |
 | `npm run icons` | Regenera los iconos PNG desde el SVG del logo |
 
 ## Estructura
@@ -64,18 +76,17 @@ backend de prueba (`npm run mock`) y usa `http://localhost:8787` como URL.
 ```
 extension/   background · content · popup · compat · manifest · assets
 dashboard/   components · pages · hooks · services · charts
-backend/     supabase/functions/faceit-proxy · supabase/migrations
 shared/      types · utils · constants · rpc · settings
 tests/       pruebas unitarias + fixtures deterministas
-scripts/     build · pack · icons · e2e · mock-backend
+scripts/     build · pack · icons · e2e
 docs/        documentación (ES)
 ```
 
 ## Stack
 
 React 18 · TypeScript · Vite · Tailwind CSS · Recharts · WebExtensions Manifest V3
-(service worker en Chromium, event page en Firefox) · Supabase (Edge Functions +
-Postgres con RLS).
+(service worker en Chromium, event page en Firefox) · `storage.local` + IndexedDB.
+Sin dependencias de servidor.
 
 ## Limitaciones conocidas
 
@@ -87,6 +98,9 @@ Postgres con RLS).
 * **Lobby durante la búsqueda**: hasta que FACEIT asigna la sala no hay
   jugadores. El análisis empieza al abrir la sala (veto), antes de que empiece la
   partida.
+* **Clave de API**: FACEIT exige una clave para cualquier consulta (ver arriba).
+* **Premades**: FACEIT no publica los grupos; SykosTracker los marca como
+  «posibles» cuando dos jugadores coinciden en varias de sus últimas 20 partidas.
 * **Historial PvP completo**: se escanea poco a poco (100 partidas por petición).
   Mientras no se haya terminado, la interfaz avisa de que los resultados son
   parciales.

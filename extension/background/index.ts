@@ -8,8 +8,8 @@ import { ext, getURL, notify, onMessage, openTab } from '@ext/compat/browser';
 import { clearCache, idb, pruneCache } from './db';
 import { FaceitClient } from './faceit-client';
 import { HttpError } from './rate-limiter';
-import { analyzeLobby, analyzePvp } from './services';
-import { ConfigError } from './transport';
+import { analyzeLobby, analyzePvp, lobbyIntelFor } from './services';
+import { ConfigError, resolveKey } from './transport';
 
 const client = new FaceitClient(getSettings);
 
@@ -26,6 +26,8 @@ const handlers: Handlers = {
   'match.stats': (p) => client.matchStats(p.id),
   'pvp.analyze': async (p) => analyzePvp(client, await getSettings(), p),
   'lobby.analyze': (p) => analyzeLobby(client, p.matchId, p.force),
+  'lobby.intel': async (p) => lobbyIntelFor(client, await getSettings(), p.matchId, !!p.scanOlder),
+  'api.status': async () => ({ keySource: resolveKey(await getSettings()).source }),
   'ui.openDashboard': async (p) => {
     await openTab(getURL(`dashboard/index.html${p.hash ? `#${p.hash.replace(/^#/, '')}` : ''}`));
     return true;
@@ -51,7 +53,8 @@ const handlers: Handlers = {
       const s = await getSettings();
       const probe = s.myNickname || 's1mple';
       const p = await client.resolvePlayer(probe, true);
-      return { ok: true, message: `Conexión correcta. Encontrado: ${p.nickname}${p.elo ? ` (${p.elo} ELO)` : ''}.` };
+      const src = resolveKey(s).source === 'user' ? 'tu clave' : 'la clave incluida en esta versión';
+      return { ok: true, message: `Conexión directa con FACEIT correcta (${src}). Encontrado: ${p.nickname}${p.elo ? ` (${p.elo} ELO)` : ''}.` };
     } catch (e) {
       return { ok: false, message: String((e as Error).message) };
     }

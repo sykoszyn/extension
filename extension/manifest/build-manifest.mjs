@@ -14,7 +14,6 @@
 
 export const TARGETS = ['chrome', 'edge', 'brave', 'opera', 'firefox'];
 
-export const BACKEND_HOSTS = ['https://*.supabase.co/*'];
 export const FACEIT_API_HOSTS = ['https://open.faceit.com/*'];
 
 /**
@@ -36,7 +35,8 @@ export function buildManifest(target, version) {
     action: { default_title: 'SykosTracker', default_popup: 'extension/popup/index.html', default_icon: icons },
     options_ui: { page: 'dashboard/index.html#settings', open_in_tab: true },
     permissions: ['storage', 'unlimitedStorage', 'notifications', 'alarms'],
-    host_permissions: [...FACEIT_API_HOSTS, ...BACKEND_HOSTS],
+    // The only external host: the official FACEIT Data API. No developer server.
+    host_permissions: [...FACEIT_API_HOSTS],
     content_scripts: [
       {
         matches: ['https://www.faceit.com/*'],
@@ -59,8 +59,8 @@ export function buildManifest(target, version) {
           id: 'sykostracker@sykostracker.app',
           strict_min_version: '128.0',
           data_collection_permissions: {
-            // Nicknames / match ids the user looks up are sent to the FACEIT API
-            // (directly or via the user's own Supabase proxy) to fetch stats.
+            // Nicknames / player ids / match ids the user looks up are sent to the
+            // FACEIT Data API (open.faceit.com) to fetch stats. Nothing else leaves the browser.
             required: ['websiteActivity'],
           },
         },

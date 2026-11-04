@@ -17,16 +17,20 @@
 | Steam Web API | **No usada.** FACEIT ya devuelve el nickname de Steam; no hace falta | — |
 | FACEIT Match / Chat / Downloads API | **No usadas.** Requieren acuerdos o scopes de organizador | — |
 
-### Tipos de clave FACEIT
+### Autenticación (sin backend)
 
-FACEIT Developers (App Studio) emite claves **server-side** y **client-side**.
+La Data API **siempre** necesita `Authorization: Bearer <API key>`; no admite
+peticiones anónimas. SykosTracker no tiene servidor, así que usa claves
+**client-side**, el tipo que FACEIT ofrece para código que se ejecuta en el
+navegador:
 
-* **Server-side**: secreta y nunca debe ir dentro de la extensión. SykosTracker la
-  guarda como secreto de la Supabase Edge Function `faceit-proxy` (modo *backend*,
-  el recomendado).
-* **Client-side**: pensada para navegadores. El modo *directo* de SykosTracker deja
-  que cada usuario pegue **su propia** clave client-side, que se guarda solo en
-  `storage.local` de su navegador. El código no lleva ninguna clave.
+* por defecto, la clave del propio usuario, guardada solo en su `storage.local`;
+* opcionalmente, una clave client-side que el editor incluye al compilar
+  (`SYKOS_FACEIT_CLIENT_KEY`).
+
+Las claves **server-side** son secretas y no se pueden usar sin un servidor. Las
+ventajas, inconvenientes y alternativas de cada opción están en
+[04-clave-faceit-api.md](04-clave-faceit-api.md).
 
 ## 2. Endpoints usados (todos `GET`, solo lectura)
 
@@ -49,8 +53,7 @@ encontrar para todas las claves. En lugar de dar por buena una cifra concreta:
 * el **cliente** limita la concurrencia (4) y deja ≥110 ms entre peticiones,
   reintenta 429 y 5xx con backoff exponencial (respetando `Retry-After`), y ante
   un 429 pausa **toda la cola**;
-* el **backend** cachea respuestas en Postgres (compartidas por todos los usuarios)
-  y limita cada instalación/IP a `RATE_LIMIT_PER_MINUTE` (120 por defecto).
+* todo se cachea en IndexedDB y nunca se vuelve a pedir lo que ya está guardado (por ejemplo, las partidas terminadas).
 
 ## 3. Disponibilidad de cada estadística pedida
 
@@ -69,6 +72,7 @@ encontrar para todas las claves. En lugar de dar por buena una cifra concreta:
 | Rendimiento por mapa (últimas 5/10/20/50/100) | ✅ | Calculado sobre `/games/cs2/stats` |
 | Rachas por mapa | ✅ (calculado) | Sobre la ventana elegida; se indica la ventana |
 | Partidas compartidas / compañero / rival | ✅ | Rosters de `/history` |
+| **Enemy Intelligence** (encuentros previos, mejores y peores mapas, posibles premades, veto) | ✅ (derivado) | Historial local del usuario + lifetime por mapa + IDs de las últimas 20 partidas de cada jugador. «Premade» se presenta como inferencia, con la prueba en la que se basa |
 | K/D / ADR en enfrentamientos directos | ✅ (progresivo) | `/matches/{id}/stats` de cada partida compartida, con límite por consulta y caché permanente |
 | Mapa de cada partida del historial | ✅ (progresivo) | De `/games/cs2/stats` (últimas 100) o del scoreboard al abrirla |
 | Banderas | ✅ | Campo `country` (ISO-2) → emoji. Sin imágenes de terceros |

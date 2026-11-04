@@ -6,10 +6,15 @@ const KEY = 'sykos.settings';
 const FAV = 'sykos.favorites';
 const RECENT = 'sykos.recent';
 
+/** Keys from older versions that must not survive a settings write (e.g. the removed backend mode). */
+const OBSOLETE_KEYS = ['apiMode', 'backendUrl', 'backendAnonKey'];
+
 export function mergeSettings(stored: Partial<Settings> | undefined): Settings {
+  const clean = { ...(stored ?? {}) } as Record<string, unknown>;
+  for (const k of OBSOLETE_KEYS) delete clean[k];
   return {
     ...DEFAULT_SETTINGS,
-    ...(stored ?? {}),
+    ...(clean as Partial<Settings>),
     autoAccept: { ...DEFAULT_SETTINGS.autoAccept, ...(stored?.autoAccept ?? {}) },
   };
 }

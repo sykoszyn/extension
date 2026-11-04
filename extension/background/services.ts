@@ -7,6 +7,7 @@ import type { LobbyPlayer, LobbyTeam, PvpResult } from '@shared/types/analytics'
 import type { Faction, MatchStats } from '@shared/types/faceit';
 import type { Settings } from '@shared/types/settings';
 import { computePvp, findSharedMatches } from '@shared/utils/analytics';
+import { lobbyIntel } from '@shared/utils/intel';
 import { idb, peekCached } from './db';
 import type { FaceitClient } from './faceit-client';
 import { coverageOf, EMPTY_HISTORY, scanHistory, type StoredHistory } from './history-scan';
@@ -97,4 +98,16 @@ export async function analyzeLobby(client: FaceitClient, matchId: string, force 
     })),
   );
   return { match, teams };
+}
+
+/**
+ * Enemy Intelligence for a lobby. Uses the user's locally stored history
+ * (scanning further back only when asked) plus the cached lobby data —
+ * no extra requests per player.
+ */
+export async function lobbyIntelFor(client: FaceitClient, settings: Settings, matchId: string, scanOlder: boolean) {
+  const { match, teams } = await analyzeLobby(client, matchId);
+  const meId = settings.myPlayerId;
+  const history = meId ? await scanPlayerHistory(client, meId, settings, scanOlder) : EMPTY_HISTORY;
+  return lobbyIntel({ meId, teams, history: history.matches, mapPool: match.mapPool, coverage: coverageOf(history) });
 }

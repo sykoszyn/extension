@@ -3,8 +3,8 @@
 | Comando | Qué comprueba |
 |---|---|
 | `npm run typecheck` | TypeScript estricto en todo el proyecto (extensión, dashboard, tests) |
-| `npm test` | 48 pruebas unitarias con Vitest |
-| `npm run build && npm run e2e` | 12 comprobaciones end-to-end con la extensión **compilada** cargada en Chromium real |
+| `npm test` | 54 pruebas unitarias con Vitest |
+| `npm run build && npm run e2e` | 14 comprobaciones end-to-end con la extensión **compilada** cargada en Chromium real |
 
 ## Unitarias (`tests/`)
 
@@ -18,22 +18,26 @@
 | `cache.test.ts` | Caché con TTL, agrupación de peticiones en curso, `force`, TTL según el valor (IndexedDB simulado) |
 | `faceit-url.test.ts` | Rutas de perfil y sala, entrada del buscador, rechazo de dominios ajenos |
 | `auto-accept.test.ts` | Detección del diálogo (EN/ES), ignora invitaciones a party, botones ocultos o deshabilitados y textos ajenos, clic seguro |
-| `manifest.test.ts` | Service worker en Chromium y `background.scripts` en Firefox, permisos mínimos |
+| `manifest.test.ts` | Service worker en Chromium y `background.scripts` en Firefox, permisos mínimos y `open.faceit.com` como único host |
+| `intel.test.ts` | Enemy Intel: encuentros previos contra los datos de las fixtures, mapas con muestra mínima, premades (agrupación), tabla de veto |
+| `settings.test.ts` | Valores por defecto seguros y borrado de los ajustes de backend de versiones anteriores |
 
 ## End-to-end (`scripts/e2e.mjs`)
 
-Arranca `scripts/mock-backend.mjs` (fixtures deterministas de `tests/fixtures/`),
-carga `dist/chrome` en Chromium (headless nuevo) y comprueba:
+Carga `dist/chrome` en Chromium (headless nuevo), intercepta las peticiones del
+service worker a `open.faceit.com` y responde con las fixtures deterministas de
+`tests/fixtures/` (no hace falta clave real). Comprueba:
 
 1. Overview con perfil y estadísticas.
 2. Player vs Player: los números de las tarjetas coinciden con los datos de las fixtures.
 3. Historial con el scoreboard desplegable y los botones VER PARTIDA.
-4. Lobby Analyzer: YOUR TEAM vs ENEMY TEAM, 10 jugadores, pestañas Fuerza y Mapas.
-5. Map Statistics, Settings y popup.
+4. Lobby Analyzer: YOUR TEAM vs ENEMY TEAM, 10 jugadores, pestañas Intel, Fuerza y Mapas.
+5. Map Statistics, Settings y el popup (perfil, ELO, win rate, últimas partidas, ≤ 600 px de alto).
 6. Content script en `www.faceit.com` (respuesta simulada): panel de perfil, pestaña VS tú y sala.
 7. Auto Accept **desactivado**: avisa y **no** pulsa.
 8. Auto Accept **activado**: cuenta atrás y un único clic en el botón oficial.
 9. Auto Accept **cancelado**: no pulsa.
+10. Red: todas las llamadas van a `open.faceit.com` con la clave del usuario y **ninguna** sale hacia otro dominio.
 
 Las capturas se guardan en `dist/e2e/` (o en `$E2E_OUT`).
 
@@ -42,7 +46,5 @@ Las capturas se guardan en `dist/e2e/` (o en `$E2E_OUT`).
 * La API real de FACEIT y su HTML real: se usan fixtures porque el entorno de CI
   no tiene clave ni red hacia FACEIT. Haz una prueba manual con una clave real
   antes de cada versión (ver `05-publicacion.md`).
-* La Edge Function en Deno: las migraciones SQL se han aplicado y probado en
-  Postgres 16, pero la función en sí solo se ha validado sintácticamente.
 * Firefox: el build de Firefox se genera y se valida su manifest; la carga manual
   en Firefox está en `03-instalacion.md`.

@@ -4,18 +4,18 @@
  *
  *   npm run build && node scripts/e2e.mjs
  *
- * Starts the mock backend (fixtures, no FACEIT key needed), loads dist/chrome,
- * drives the dashboard, the in-page FACEIT panels (on a stubbed faceit.com
- * page) and Auto Accept, asserting real rendered values. Screenshots go to
+ * Loads dist/chrome, intercepts requests to open.faceit.com with deterministic
+ * fixtures (no real key needed), and drives the popup, the internal dashboard
+ * page, the in-page FACEIT panels (on a stubbed faceit.com page) and Auto
+ * Accept, asserting real rendered values. Screenshots go to
  * $E2E_OUT (default: dist/e2e).
  */
 import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import { ME, RIVAL, LIVE_MATCH_ID, MATCHES } from '../tests/fixtures/mock-faceit.mjs';
+import { ME, RIVAL, LIVE_MATCH_ID, MATCHES, handle } from '../tests/fixtures/mock-faceit.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -24,8 +24,6 @@ const ext = path.join(root, 'dist/chrome');
 const out = process.env.E2E_OUT ?? path.join(root, 'dist/e2e');
 await mkdir(out, { recursive: true });
 
-const server = spawn(process.execPath, [path.join(root, 'scripts/mock-backend.mjs')], { env: { ...process.env, PORT: '8787' }, stdio: 'ignore' });
-await new Promise((r) => setTimeout(r, 600));
 
 const ctx = await chromium.launchPersistentContext('', {
   headless: true,
@@ -45,6 +43,22 @@ const step = async (name, fn) => {
   }
 };
 
+// Every FACEIT Data API call (made by the extension's service worker) is answered from fixtures.
+const apiCalls = [];
+await ctx.route('https://open.faceit.com/data/v4/**', (route) => {
+  const req = route.request();
+  const url = new URL(req.url());
+  apiCalls.push({ path: url.pathname, auth: req.headers()['authorization'] });
+  const out = handle(url.pathname.replace('/data/v4', ''), Object.fromEntries(url.searchParams));
+  return route.fulfill({ status: out.status, contentType: 'application/json', body: JSON.stringify(out.body) });
+});
+// Anything else outside FACEIT would be a privacy regression.
+const foreign = [];
+ctx.on('request', (r) => {
+  const u = new URL(r.url());
+  if (!['chrome-extension:', 'data:', 'blob:'].includes(u.protocol) && !/(^|\.)faceit\.com$/.test(u.hostname)) foreign.push(r.url());
+});
+
 try {
   let [sw] = ctx.serviceWorkers();
   sw ??= await ctx.waitForEvent('serviceworker');
@@ -52,7 +66,7 @@ try {
   await sw.evaluate(
     ([me]) =>
       chrome.storage.local.set({
-        'sykos.settings': { apiMode: 'backend', backendUrl: 'http://localhost:8787', backendAnonKey: 'test-anon', myNickname: 'Sykos', myPlayerId: me },
+        'sykos.settings': { faceitApiKey: 'test-client-key', myNickname: 'Sykos', myPlayerId: me },
       }),
     [ME.id],
   );
@@ -107,6 +121,15 @@ try {
     await shot('06-lobby-maps');
   });
 
+  await step('Lobby Enemy Intelligence', async () => {
+    await dash(`lobby/${LIVE_MATCH_ID}`);
+    await page.getByRole('tab', { name: 'Intel' }).click({ timeout: 20000 });
+    await page.getByText('ENEMY TEAM · Enemy Intelligence').waitFor({ timeout: 20000 });
+    await page.getByText('Posibles premades').waitFor();
+    assert.ok(await page.getByText('Contra ti:').first().isVisible());
+    await shot('07b-lobby-intel');
+  });
+
   await step('Map statistics page', async () => {
     await dash('maps');
     await page.getByText('Map Performance · partidas recientes').waitFor();
@@ -122,10 +145,14 @@ try {
 
   await step('Popup', async () => {
     const pop = await ctx.newPage();
-    await pop.setViewportSize({ width: 360, height: 560 });
+    await pop.setViewportSize({ width: 360, height: 600 }); // Chromium caps popups at 600px
     await pop.goto(`chrome-extension://${id}/extension/popup/index.html`);
-    await pop.getByText('Abrir dashboard').waitFor();
-    await pop.getByText('Sykos', { exact: true }).waitFor({ timeout: 10000 });
+    await pop.getByText('Análisis completo').waitFor();
+    await pop.getByText('Últimas partidas').waitFor({ timeout: 10000 });
+    await pop.locator('a[title="VER PARTIDA en FACEIT"]').first().waitFor({ timeout: 10000 });
+    assert.ok(await pop.getByText('Win rate', { exact: true }).isVisible());
+    const h = await pop.evaluate(() => document.documentElement.scrollHeight);
+    assert.ok(h <= 600, `popup taller than 600px (${h})`);
     await pop.screenshot({ path: path.join(out, '09-popup.png') });
     await pop.close();
   });
@@ -187,9 +214,13 @@ try {
     assert.equal(await fp.evaluate(() => window.__accepted ?? 0), 0);
     await fp.close();
   });
+  await step('Network: only open.faceit.com, with the user key, no other servers', async () => {
+    assert.ok(apiCalls.length > 10, `expected API calls, got ${apiCalls.length}`);
+    assert.ok(apiCalls.every((c) => c.auth === 'Bearer test-client-key'));
+    assert.deepEqual(foreign, []);
+  });
 } finally {
   await ctx.close();
-  server.kill();
 }
 
 for (const r of results) console.log(r.join(' '));

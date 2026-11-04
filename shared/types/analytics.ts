@@ -142,3 +142,51 @@ export interface TeamStrength {
 }
 
 export type { HistoryMatch };
+
+// ───────────── Enemy Intelligence ─────────────
+
+export interface PlayerIntel {
+  playerId: string;
+  nickname: string;
+  faction: Faction;
+  /** Relative to the user. null when the user is not in this lobby. */
+  side: 'enemy' | 'teammate' | null;
+  /** From the user's locally discovered history. */
+  shared: Record3;
+  asEnemies: Record3;
+  asTeammates: Record3;
+  lastMet: number | null;
+  /** Lifetime maps with ≥ MIN_MAP_SAMPLE matches, best win rate first. */
+  bestMaps: { map: string; matches: number; winRate: number }[];
+  worstMap: { map: string; matches: number; winRate: number } | null;
+  recentKd: number | null;
+  recentAdr: number | null;
+  recentWinRate: number | null;
+  recentMatches: number;
+}
+
+export interface PremadeGroup {
+  faction: Faction;
+  players: { id: string; nickname: string }[];
+  /** Highest number of shared matches between two members within their last 20 games. */
+  sharedRecent: number;
+}
+
+export interface VetoRow {
+  map: string;
+  /** Team mean lifetime win rate on the map (players with ≥ MIN_MAP_SAMPLE matches). */
+  ourWr: number | null;
+  theirWr: number | null;
+  ourSample: number;
+  theirSample: number;
+  /** ourWr − theirWr, null when either side lacks data. */
+  diff: number | null;
+}
+
+export interface LobbyIntel {
+  myFaction: Faction | null;
+  players: PlayerIntel[];
+  premades: PremadeGroup[];
+  veto: VetoRow[];
+  coverage: HistoryCoverage;
+}

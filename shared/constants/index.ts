@@ -15,9 +15,6 @@ export const HISTORY_PAGE_SIZE = 100;
 export const MATCH_STATS_PAGE_SIZE = 100;
 
 export const DEFAULT_SETTINGS: Settings = {
-  apiMode: 'backend',
-  backendUrl: '',
-  backendAnonKey: '',
   faceitApiKey: '',
   myNickname: '',
   myPlayerId: '',

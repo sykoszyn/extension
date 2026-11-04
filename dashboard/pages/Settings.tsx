@@ -46,17 +46,19 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
   const [nick, setNick] = useState(settings.myNickname);
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [keySource, setKeySource] = useState<'user' | 'bundled' | 'none' | null>(null);
   useEffect(() => setDraft(settings), [settings]);
+  useEffect(() => {
+    rpc('api.status', {})
+      .then((r) => setKeySource(r.keySource))
+      .catch(() => setKeySource(null));
+  }, []);
 
   const saveConnection = async () => {
     setBusy(true);
     setStatus(null);
-    await update({
-      apiMode: draft.apiMode,
-      backendUrl: draft.backendUrl.trim(),
-      backendAnonKey: draft.backendAnonKey.trim(),
-      faceitApiKey: draft.faceitApiKey.trim(),
-    });
+    await update({ faceitApiKey: draft.faceitApiKey.trim() });
+    setKeySource((await rpc('api.status', {}).catch(() => ({ keySource: 'none' as const }))).keySource);
     const r = await rpc('api.test', {}).catch((e) => ({ ok: false, message: String(e.message) }));
     setStatus({ ok: r.ok, msg: r.message });
     setBusy(false);
@@ -97,37 +99,40 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
         </p>
       </Card>
 
-      <Card title="Conexión con FACEIT API">
+      <Card title="Conexión con FACEIT">
         <div className="space-y-3">
-          <div className="flex gap-2">
-            {(['backend', 'direct'] as const).map((m) => (
-              <button key={m} className={draft.apiMode === m ? 'st-btn-primary' : 'st-btn-ghost'} onClick={() => setDraft({ ...draft, apiMode: m })}>
-                {m === 'backend' ? 'Backend Supabase (recomendado)' : 'Clave propia (directo)'}
-              </button>
-            ))}
-          </div>
-          {draft.apiMode === 'backend' ? (
-            <>
-              <Field label="URL del proyecto Supabase" hint="p. ej. https://abcd1234.supabase.co">
-                <input className="st-input" value={draft.backendUrl} onChange={(e) => setDraft({ ...draft, backendUrl: e.target.value })} placeholder="https://xxxx.supabase.co" />
-              </Field>
-              <Field label="Anon key (pública)" hint="La clave anon es pública por diseño. La clave de FACEIT vive como secreto en la Edge Function.">
-                <input className="st-input font-mono" value={draft.backendAnonKey} onChange={(e) => setDraft({ ...draft, backendAnonKey: e.target.value })} />
-              </Field>
-            </>
-          ) : (
-            <>
-              <Field label="FACEIT client-side API key" hint="Crea una en developers.faceit.com → App Studio → API Keys (tipo Client side). Se guarda solo en este navegador.">
-                <input className="st-input font-mono" type="password" value={draft.faceitApiKey} onChange={(e) => setDraft({ ...draft, faceitApiKey: e.target.value })} />
-              </Field>
-              <Notice tone="warn">Usa solo una clave propia de tipo client-side. No pegues nunca claves server-side ni credenciales de tu cuenta.</Notice>
-            </>
-          )}
-          <div className="flex items-center gap-3">
+          <p className="text-[12px] text-fog-400">
+            SykosTracker funciona solo en tu navegador. Habla directamente con la API oficial de FACEIT (<span className="font-mono">open.faceit.com</span>), sin servidores
+            intermedios ni cuentas propias. FACEIT exige una clave de API para cualquier consulta.
+          </p>
+          <Field
+            label="Tu FACEIT client-side API key"
+            hint={
+              <>
+                Gratis en{' '}
+                <a className="text-ember-400 hover:underline" href="https://developers.faceit.com" target="_blank" rel="noreferrer">
+                  developers.faceit.com
+                </a>{' '}
+                → App Studio → tu app → API Keys → tipo <b>Client side</b>. Se guarda solo en este navegador.
+              </>
+            }
+          >
+            <input className="st-input font-mono" type="password" autoComplete="off" value={draft.faceitApiKey} onChange={(e) => setDraft({ ...draft, faceitApiKey: e.target.value })} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+          </Field>
+          <Notice tone="warn">Usa solo una clave de tipo client-side. Nunca pegues una clave server-side ni la contraseña de tu cuenta.</Notice>
+          <div className="flex flex-wrap items-center gap-3">
             <button className="st-btn-primary" disabled={busy} onClick={saveConnection}>
               Guardar y probar
             </button>
             {busy && <Spinner />}
+            {keySource && (
+              <span className="text-[12px] text-fog-400">
+                Clave en uso:{' '}
+                <b className={keySource === 'none' ? 'text-blood-400' : 'text-fog-100'}>
+                  {keySource === 'user' ? 'la tuya' : keySource === 'bundled' ? 'incluida en esta versión' : 'ninguna'}
+                </b>
+              </span>
+            )}
           </div>
         </div>
       </Card>

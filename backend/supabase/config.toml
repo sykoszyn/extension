@@ -1,9 +1,0 @@
-# Minimal Supabase CLI config for SykosTracker.
-project_id = "sykostracker"
-
-[functions.faceit-proxy]
-# The extension authenticates with the public anon/publishable key as `apikey`.
-# JWT verification is disabled so both legacy JWT anon keys and the newer
-# non-JWT publishable keys work; abuse is limited by the allow-lists, the
-# optional ALLOWED_ORIGINS check and the per-install/IP rate limit.
-verify_jwt = false

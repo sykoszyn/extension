@@ -8,6 +8,7 @@ import { compareTeams, NORMALISERS, SPI_WEIGHTS, teamStrength } from '@shared/ut
 import { SERIES, StrengthChart } from '../charts';
 import { useRpc } from '../hooks/useRpc';
 import { MapCard, MapPerformance } from './MapPerformance';
+import { EnemyIntel } from './EnemyIntel';
 import { Avatar, Card, Empty, ErrorBox, Flag, FormStrip, LevelBadge, MapBadge, Notice, Segmented, Skeleton, Source, Spinner, cx } from './ui';
 
 const LIVE = new Set(['VOTING', 'CONFIGURING', 'READY', 'CHECK_IN', 'SUBSTITUTION', 'ONGOING', 'CAPTAIN_PICK']);
@@ -298,7 +299,7 @@ function MapFocus({ teams, match, labels }: { teams: LobbyTeam[]; match: MatchDe
 /** Lobby Analyzer: the 10 players of a match room, both teams, strength + map analysis. */
 export function LobbyView({ matchId, myPlayerId, onOpenPlayer }: { matchId: string; myPlayerId: string; onOpenPlayer?: (id: string) => void }) {
   const lobby = useRpc('lobby.analyze', { matchId });
-  const [view, setView] = useState<'teams' | 'strength' | 'maps'>('teams');
+  const [view, setView] = useState<'teams' | 'intel' | 'strength' | 'maps'>('teams');
   const status = lobby.data?.match.status;
 
   // While the room is live (veto in progress), refresh the match every 20 s to pick up the map.
@@ -356,6 +357,7 @@ export function LobbyView({ matchId, myPlayerId, onOpenPlayer }: { matchId: stri
           onChange={setView}
           options={[
             { key: 'teams', label: 'Equipos' },
+            { key: 'intel', label: 'Intel' },
             { key: 'strength', label: 'Fuerza' },
             { key: 'maps', label: 'Mapas' },
           ]}
@@ -376,6 +378,7 @@ export function LobbyView({ matchId, myPlayerId, onOpenPlayer }: { matchId: stri
         </div>
       )}
       {view === 'strength' && <StrengthPanel you={sa} them={sb} youLabel={ordered.labels[0]} themLabel={ordered.labels[1]} map={match.map} />}
+      {view === 'intel' && <EnemyIntel matchId={matchId} myPlayerId={myPlayerId} labels={[ordered.labels[0], ordered.labels[1]]} />}
       {view === 'maps' && <MapFocus teams={ordered.teams} match={match} labels={ordered.labels} />}
       <Source>FACEIT Data API · /matches/&#123;id&#125; + perfil, lifetime y últimas 20 partidas de cada jugador (caché 10–30 min).</Source>
     </div>

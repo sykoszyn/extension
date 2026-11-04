@@ -1,19 +1,23 @@
 /**
- * Network transport to the FACEIT Data API v4.
+ * Network transport to the FACEIT Data API v4 — the ONLY external host the
+ * extension talks to. There is no SykosTracker server.
  *
- * Two modes, selected in Settings:
- *  - backend (recommended): POST to the Supabase Edge Function `faceit-proxy`,
- *    which holds the FACEIT server-side API key as a secret. The extension
- *    only ships the public Supabase anon key.
- *  - direct: the user pastes their OWN FACEIT client-side key; requests go
- *    straight to open.faceit.com. The key is stored only in this browser.
+ * Authentication (FACEIT Data API always requires a Bearer API key):
+ *  1. The user's own **client-side** key, pasted in Settings and stored only
+ *     in this browser (storage.local). Recommended.
+ *  2. Optional, publisher-supplied **client-side** key baked in at build time
+ *     (env SYKOS_FACEIT_CLIENT_KEY → __SYKOS_BUNDLED_KEY__). Empty by default.
+ *     Client-side keys are FACEIT's key type intended for browser code; a
+ *     server-side (secret) key must never be used here. See docs/04.
  *
- * In both modes only an allow-listed set of read-only GET paths is used.
+ * Only an allow-listed set of read-only GET paths can be requested.
  */
 import { FACEIT_API_BASE, RATE_LIMIT } from '@shared/constants';
 import type { Settings } from '@shared/types/settings';
 import { HttpError, RateLimiter } from './rate-limiter';
-import { ext } from '@ext/compat/browser';
+
+declare const __SYKOS_BUNDLED_KEY__: string;
+export const BUNDLED_KEY: string = typeof __SYKOS_BUNDLED_KEY__ === 'string' ? __SYKOS_BUNDLED_KEY__ : '';
 
 export const ALLOWED_PATHS: RegExp[] = [
   /^\/players$/,
@@ -32,6 +36,13 @@ export const limiter = new RateLimiter({ ...RATE_LIMIT });
 
 export class ConfigError extends Error {
   code = 'NOT_CONFIGURED';
+}
+
+/** Which key will be used: the user's own wins over a bundled one. */
+export function resolveKey(settings: Settings): { key: string; source: 'user' | 'bundled' | 'none' } {
+  if (settings.faceitApiKey.trim()) return { key: settings.faceitApiKey.trim(), source: 'user' };
+  if (BUNDLED_KEY) return { key: BUNDLED_KEY, source: 'bundled' };
+  return { key: '', source: 'none' };
 }
 
 function qs(q: Query): string {
@@ -57,50 +68,26 @@ async function fail(res: Response): Promise<never> {
     /* ignore */
   }
   const human: Record<number, string> = {
-    401: 'Clave de API rechazada por FACEIT (401).',
-    403: 'Acceso denegado (403).',
+    401: 'FACEIT ha rechazado la clave de API (401). Revisa que sea una clave client-side válida.',
+    403: 'FACEIT ha denegado el acceso (403).',
     404: 'No encontrado en FACEIT (404).',
-    429: 'Límite de peticiones alcanzado; reintentando…',
+    429: 'Límite de peticiones de FACEIT alcanzado; reintentando…',
   };
   throw new HttpError(res.status, human[res.status] ?? `Error HTTP ${res.status}${detail ? `: ${detail}` : ''}`, retryAfter(res));
 }
 
 export async function faceitGet<T = any>(settings: Settings, path: string, query: Query = {}): Promise<T> {
   if (!ALLOWED_PATHS.some((re) => re.test(path))) throw new Error(`Ruta no permitida: ${path}`);
+  const { key } = resolveKey(settings);
+  if (!key) throw new ConfigError('Añade tu clave client-side de FACEIT en Ajustes → Conexión con FACEIT.');
 
   return limiter.run(async () => {
-    if (settings.apiMode === 'direct') {
-      if (!settings.faceitApiKey) throw new ConfigError('Falta tu clave de FACEIT API (Ajustes → Conexión).');
-      const res = await fetch(`${FACEIT_API_BASE}${path}${qs(query)}`, {
-        headers: { Authorization: `Bearer ${settings.faceitApiKey}`, Accept: 'application/json' },
-      });
-      if (!res.ok) await fail(res);
-      return (await res.json()) as T;
-    }
-    if (!settings.backendUrl || !settings.backendAnonKey)
-      throw new ConfigError('Configura la URL y la anon key del backend de Supabase (Ajustes → Conexión).');
-    const base = settings.backendUrl.replace(/\/+$/, '');
-    const res = await fetch(`${base}/functions/v1/faceit-proxy`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: settings.backendAnonKey,
-        Authorization: `Bearer ${settings.backendAnonKey}`,
-        'x-sykos-install': await installId(),
-      },
-      body: JSON.stringify({ path, query }),
+    const res = await fetch(`${FACEIT_API_BASE}${path}${qs(query)}`, {
+      headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
     });
     if (!res.ok) await fail(res);
     return (await res.json()) as T;
   });
-}
-
-/** Random, anonymous per-install id used only for backend rate limiting. */
-let cachedInstall: string | null = null;
-async function installId(): Promise<string> {
-  if (cachedInstall) return cachedInstall;
-  const got = await ext.storage.local.get('sykos.install');
-  cachedInstall = (got['sykos.install'] as string) || crypto.randomUUID();
-  if (!got['sykos.install']) await ext.storage.local.set({ 'sykos.install': cachedInstall });
-  return cachedInstall;
 }

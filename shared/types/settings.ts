@@ -1,5 +1,3 @@
-export type ApiMode = 'backend' | 'direct';
-
 export interface AutoAcceptSettings {
   /** Never true unless the user explicitly turned it on. */
   enabled: boolean;
@@ -14,12 +12,10 @@ export interface AutoAcceptSettings {
 }
 
 export interface Settings {
-  apiMode: ApiMode;
-  /** e.g. https://xyzcompany.supabase.co */
-  backendUrl: string;
-  /** Supabase anon (public) key — safe to ship, RLS protects the data. */
-  backendAnonKey: string;
-  /** Personal FACEIT client-side API key (direct mode only). Stored locally. */
+  /**
+   * The user's own FACEIT *client-side* API key. Stored only in this browser
+   * (storage.local) and sent only to open.faceit.com.
+   */
   faceitApiKey: string;
   myNickname: string;
   myPlayerId: string;
