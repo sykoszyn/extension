@@ -17,22 +17,23 @@ import { MapTable, PlayerHeader, PlayerOverview } from '../components/PlayerOver
 import { PlayerSearch } from '../components/PlayerSearch';
 import { PvpPanel } from '../components/PvpPanel';
 import { Avatar, Card, Empty, ErrorBox, Skeleton } from '../components/ui';
-import { getRecentSearches, clearRecentSearches } from '@shared/settings';
+import { getRecentSearches, clearRecentSearches, updateSettings } from '@shared/settings';
+import { NicknameForm } from '../components/Simple';
+import { useSettings as useSettingsLite } from '../hooks/useSettings';
 import type { RecentSearch } from '@shared/types/settings';
 
 export { SettingsPage } from './Settings';
 
+/** First run: ask only for the nickname, right here. */
 function NeedMe() {
+  const { settings } = useSettingsLite();
   return (
-    <Empty
-      title="Configura tu cuenta FACEIT"
-      body="Indica tu nickname de FACEIT y la conexión a la API en Ajustes. SykosTracker nunca te pide contraseña ni lee tus cookies."
-      action={
-        <button className="st-btn-primary" onClick={() => navigate('settings')}>
-          Ir a Ajustes
-        </button>
-      }
-    />
+    <div className="mx-auto mt-10 max-w-sm">
+      <Card title="Empieza aquí">
+        <p className="mb-3 text-[13px] text-fog-400">Escribe tu nickname de FACEIT. No hace falta cuenta ni contraseña.</p>
+        <NicknameForm settings={settings} update={updateSettings} autoFocus />
+      </Card>
+    </div>
   );
 }
 
@@ -75,13 +76,11 @@ export function ComparePage({ arg, settings }: { arg: string | null; settings: S
   if (!settings.myPlayerId) return <NeedMe />;
   return (
     <div className="space-y-4">
-      <Card title="Player vs Player">
-        <p className="mb-3 text-[13px] text-fog-400">
-          Busca a cualquier jugador para ver cuántas partidas habéis compartido, cuántas como compañeros y cuántas como rivales, con tu récord en enfrentamientos directos.
-        </p>
+      <Card title="Comparar jugador">
+        <p className="mb-3 text-[13px] text-fog-400">Busca a un jugador para ver cuántas veces habéis jugado juntos o en contra.</p>
         <PlayerSearch onSelect={(r) => (r.kind === 'player' ? navigate('compare', r.id) : navigate('lobby', r.id))} autoFocus={!arg} />
       </Card>
-      {arg ? <PvpPanel key={arg} meId={settings.myPlayerId} otherId={arg} /> : <Empty title="Elige un rival" body="Por ejemplo, alguien con quien te cruzas a menudo en FACEIT." />}
+      {arg ? <PvpPanel key={arg} meId={settings.myPlayerId} otherId={arg} /> : <FavoritesPage settings={settings} />}
     </div>
   );
 }

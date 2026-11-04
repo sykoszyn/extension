@@ -63,11 +63,11 @@ consulta [05-publicacion.md](05-publicacion.md).
 
 ## Primer uso
 
-1. Pulsa el icono de SykosTracker → **Configuración** (la página se abre sola al instalar).
-2. **Conexión con FACEIT**: con el Worker configurado aparece «✓ Listo» y no hay que hacer nada. Si no, pega tu API key y pulsa **Guardar y probar**.
-3. **Tu cuenta**: escribe tu nickname y pulsa **Vincular**.
-4. El popup muestra tu perfil, ELO, win rate y últimas partidas. **Análisis
-   completo** abre la página interna de la extensión.
+1. Pulsa el icono de SykosTracker, escribe tu nickname de FACEIT y pulsa **Guardar**. Eso es todo.
+2. Opcional: activa **Auto-aceptar partidas** (la primera vez pide una confirmación).
+3. **Ver análisis completo** abre la página interna (Mi perfil, Comparar jugador,
+   Historial, Ajustes). La API key propia y las opciones técnicas están en
+   *Ajustes → Opciones avanzadas*, y solo hacen falta si la versión no tiene servidor.
 5. En faceit.com, el perfil de cualquier jugador muestra el panel con
    *Estadísticas* y *VS tú*. Al entrar en una sala (`/cs2/room/…`), el Lobby
    Analyzer carga a los 10 jugadores con sus pestañas *Intel*, *Fuerza* y *Mapas*.

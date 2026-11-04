@@ -4,7 +4,7 @@
 |---|---|
 | `npm run typecheck` | TypeScript estricto en todo el proyecto (extensión, dashboard, tests) |
 | `npm test` | 67 pruebas unitarias con Vitest |
-| `npm run e2e` | 15 comprobaciones end-to-end con la extensión **compilada** (con un proxy de prueba) cargada en Chromium real |
+| `npm run e2e` | 16 comprobaciones end-to-end con la extensión **compilada** (con un proxy de prueba) cargada en Chromium real |
 
 ## Unitarias (`tests/`)
 
@@ -35,7 +35,7 @@ responde con las fixtures deterministas de `tests/fixtures/`. Comprueba:
 2. Player vs Player: los números de las tarjetas coinciden con los datos de las fixtures.
 3. Historial con el scoreboard desplegable y los botones VER PARTIDA.
 4. Lobby Analyzer: YOUR TEAM vs ENEMY TEAM, 10 jugadores, pestañas Intel, Fuerza y Mapas.
-5. Map Statistics, Settings y el popup (perfil, ELO, win rate, últimas partidas, ≤ 600 px de alto).
+5. Mapas y Ajustes (las opciones avanzadas empiezan plegadas). Popup sencillo (≤ 420 px): tarjeta de perfil, confirmación en línea de Auto-aceptar (al cancelar sigue apagado) y primer uso pidiendo solo el nickname.
 6. Content script en `www.faceit.com` (respuesta simulada): panel de perfil, pestaña VS tú y sala.
 7. Auto Accept **desactivado**: avisa y **no** pulsa.
 8. Auto Accept **activado**: cuenta atrás y un único clic en el botón oficial.

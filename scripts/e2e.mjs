@@ -154,21 +154,44 @@ try {
 
   await step('Settings page', async () => {
     await dash('settings');
-    await page.getByText('Auto Accept', { exact: true }).first().waitFor();
+    await page.getByText('Auto-aceptar partidas').first().waitFor();
+    // Advanced options are hidden until asked for.
+    assert.equal(await page.getByText('Conexión con FACEIT').count(), 0);
     await shot('08-settings');
   });
 
-  await step('Popup', async () => {
+  await step('Popup: simple profile card + Auto Accept with inline confirmation', async () => {
     const pop = await ctx.newPage();
-    await pop.setViewportSize({ width: 360, height: 600 }); // Chromium caps popups at 600px
+    await pop.setViewportSize({ width: 320, height: 600 }); // Chromium caps popups at 600px
     await pop.goto(`chrome-extension://${id}/extension/popup/index.html`);
-    await pop.getByText('Análisis completo').waitFor();
-    await pop.getByText('Últimas partidas').waitFor({ timeout: 10000 });
-    await pop.locator('a[title="VER PARTIDA en FACEIT"]').first().waitFor({ timeout: 10000 });
-    assert.ok(await pop.getByText('Win rate', { exact: true }).isVisible());
-    const h = await pop.evaluate(() => document.documentElement.scrollHeight);
-    assert.ok(h <= 600, `popup taller than 600px (${h})`);
+    await pop.getByText('Ver análisis completo').waitFor();
+    await pop.getByText('Cambiar nickname').waitFor({ timeout: 10000 });
+    await pop.getByText('ELO', { exact: true }).waitFor();
+    const h = await pop.evaluate(() => Math.round(document.getElementById('root').getBoundingClientRect().height));
+    assert.ok(h <= 420, `popup should stay compact (${h}px)`);
     await pop.screenshot({ path: path.join(out, '09-popup.png') });
+    // Turning Auto Accept on asks once, inline.
+    await pop.getByRole('switch', { name: 'Auto-aceptar partidas' }).click();
+    await pop.getByRole('button', { name: 'Activar' }).waitFor();
+    await pop.screenshot({ path: path.join(out, '09b-popup-confirm.png') });
+    await pop.getByRole('button', { name: 'Cancelar' }).click();
+    const s = await sw.evaluate(async () => (await chrome.storage.local.get('sykos.settings'))['sykos.settings']);
+    assert.equal(s.autoAccept?.enabled ?? false, false, 'cancel must keep Auto Accept off');
+    await pop.close();
+  });
+
+  await step('Popup: first run asks only for the nickname', async () => {
+    const saved = await sw.evaluate(async () => (await chrome.storage.local.get('sykos.settings'))['sykos.settings']);
+    await sw.evaluate(async (s) => chrome.storage.local.set({ 'sykos.settings': { ...s, myNickname: '', myPlayerId: '' } }), saved);
+    const pop = await ctx.newPage();
+    await pop.setViewportSize({ width: 320, height: 600 });
+    await pop.goto(`chrome-extension://${id}/extension/popup/index.html`);
+    await pop.getByPlaceholder('tu_nickname').fill('Sykos');
+    await pop.screenshot({ path: path.join(out, '09c-popup-first-run.png') });
+    await pop.getByRole('button', { name: 'Guardar' }).click();
+    await pop.getByText('Cambiar nickname').waitFor({ timeout: 10000 });
+    const now = await sw.evaluate(async () => (await chrome.storage.local.get('sykos.settings'))['sykos.settings']);
+    assert.equal(now.myPlayerId, saved.myPlayerId);
     await pop.close();
   });
 
@@ -243,6 +266,7 @@ try {
       await chrome.storage.local.set({ 'sykos.settings': { ...s, faceitApiKey: 'user-own-key' } });
     });
     await dash('settings');
+    await page.getByRole('button', { name: 'Opciones avanzadas' }).click();
     await page.getByRole('button', { name: 'Guardar y probar' }).click();
     await page.getByText(/Conexión con FACEIT correcta \(directa con tu API key\)/).waitFor({ timeout: 15000 });
     assert.ok(apiCalls.length >= 1);

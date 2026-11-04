@@ -28,8 +28,8 @@ FACEIT.
 | **Lobby Strength** | Sala → *Fuerza* | Medias de cada equipo, diferencia de ELO, fortalezas y debilidades, y el **SPI**: índice propio con fórmula pública, que **no es una probabilidad** |
 | **Auto Accept** | faceit.com · popup · Settings | Opcional y **desactivado por defecto**. Hay que aceptar un aviso, tiene cuenta atrás cancelable y botón *Desactivar*. Si está apagado, avisa con notificación y sonido |
 | **Buscador global** | Dashboard y popup | Nickname, URL de FACEIT o ID de partida, con sugerencias, búsquedas recientes y favoritos |
-| **Popup** | Icono de la extensión | Tu perfil, ELO, win rate, K/D, forma, últimas partidas, buscador, Auto Accept, *Análisis completo* y *Configuración* |
-| **Análisis completo** | Página interna `dashboard/index.html` | Overview, Player Comparison, Match History, Lobby Analyzer, Map Statistics, Favorites, Settings |
+| **Popup** | Icono de la extensión | Sencillo: tu nickname (o tu tarjeta con ELO, WR, K/D y las últimas 5 partidas), el interruptor *Auto-aceptar partidas* y el enlace a *Ver análisis completo* |
+| **Análisis completo** | Página interna `dashboard/index.html` | Solo 4 secciones: Mi perfil, Comparar jugador (con favoritos y búsquedas), Historial y Ajustes (lo avanzado, plegado) |
 
 ## Inicio rápido
 
