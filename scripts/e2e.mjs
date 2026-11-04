@@ -278,6 +278,19 @@ try {
     assert.ok(apiCalls.length >= 1);
     assert.ok(apiCalls.every((c) => c.host === 'open.faceit.com' && c.auth === 'Bearer user-own-key'));
   });
+  // Must be the LAST step: it reloads the extension.
+  await step('Reloading the extension with a FACEIT tab open: stale panel removed, no errors', async () => {
+    const fp = await ctx.newPage();
+    const logged = [];
+    fp.on('console', (m) => m.type() === 'error' && logged.push(m.text()));
+    await fp.goto('https://www.faceit.com/es/players/Player123');
+    await fp.getByText('Estadísticas CS2').waitFor({ timeout: 20000 });
+    await sw.evaluate(() => setTimeout(() => chrome.runtime.reload(), 50)).catch(() => undefined);
+    await fp.waitForFunction(() => !document.getElementById('sykostracker-root'), null, { timeout: 8000 });
+    await fp.waitForTimeout(1500);
+    assert.deepEqual(logged.filter((t) => /context invalidated/i.test(t)), []);
+    await fp.close();
+  });
 } finally {
   await ctx.close();
 }

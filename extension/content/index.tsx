@@ -11,7 +11,7 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import css from '@dash/styles.css?inline';
-import { storageGet, storageSet } from '@ext/compat/browser';
+import { contextValid, isContextInvalidated, storageGet, storageSet } from '@ext/compat/browser';
 import { LogoMark } from '@dash/components/Logo';
 import { PlayerOverview } from '@dash/components/PlayerOverview';
 import { PvpPanel } from '@dash/components/PvpPanel';
@@ -159,11 +159,33 @@ function mount() {
   app.className = 'st-root';
   shadow.append(style, app);
   document.documentElement.append(host);
-  createRoot(app).render(
+  const root = createRoot(app);
+  root.render(
     <StrictMode>
       <ContentApp />
     </StrictMode>,
   );
+
+  // If SykosTracker is reloaded/updated while this tab stays open, this old
+  // script loses its connection to the extension. Remove the stale panel
+  // quietly instead of logging "Extension context invalidated" errors; the
+  // new version appears on the next page load.
+  const teardown = () => {
+    clearInterval(watch);
+    window.removeEventListener('unhandledrejection', swallow);
+    root.unmount();
+    host.remove();
+  };
+  const swallow = (ev: PromiseRejectionEvent) => {
+    if (isContextInvalidated(ev.reason)) {
+      ev.preventDefault();
+      teardown();
+    }
+  };
+  window.addEventListener('unhandledrejection', swallow);
+  const watch = setInterval(() => {
+    if (!contextValid()) teardown();
+  }, 2000);
 }
 
 if (document.body) mount();

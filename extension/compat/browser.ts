@@ -29,21 +29,59 @@ export function hasSessionStorage(): boolean {
   return !!ext?.storage?.session;
 }
 
+/**
+ * False once the extension was reloaded/updated/removed while a content script
+ * is still alive in an open tab ("Extension context invalidated"). From then on
+ * every extension API call throws, so callers must stop quietly.
+ */
+export function contextValid(): boolean {
+  try {
+    return !!ext?.runtime?.id;
+  } catch {
+    return false;
+  }
+}
+
+export function isContextInvalidated(e: unknown): boolean {
+  return /extension context invalidated/i.test(String((e as Error)?.message ?? e));
+}
+
 export async function storageGet<T>(key: string, fallback: T): Promise<T> {
-  const out = await ext.storage.local.get(key);
-  return (out?.[key] as T | undefined) ?? fallback;
+  if (!contextValid()) return fallback;
+  try {
+    const out = await ext.storage.local.get(key);
+    return (out?.[key] as T | undefined) ?? fallback;
+  } catch (e) {
+    if (isContextInvalidated(e)) return fallback;
+    throw e;
+  }
 }
 
 export async function storageSet(key: string, value: unknown): Promise<void> {
-  await ext.storage.local.set({ [key]: value });
+  if (!contextValid()) return;
+  try {
+    await ext.storage.local.set({ [key]: value });
+  } catch (e) {
+    if (!isContextInvalidated(e)) throw e;
+  }
 }
 
 export function onStorageChange(key: string, cb: (value: unknown) => void): () => void {
   const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
     if (area === 'local' && key in changes) cb(changes[key].newValue);
   };
-  ext.storage.onChanged.addListener(listener);
-  return () => ext.storage.onChanged.removeListener(listener);
+  try {
+    ext.storage.onChanged.addListener(listener);
+  } catch {
+    return () => undefined;
+  }
+  return () => {
+    try {
+      ext.storage.onChanged.removeListener(listener);
+    } catch {
+      /* context already gone */
+    }
+  };
 }
 
 export function getURL(path: string): string {
