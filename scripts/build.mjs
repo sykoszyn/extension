@@ -8,6 +8,10 @@
  *   3. content.js — single IIFE file (MV3 content scripts can't be ES modules).
  *
  * Usage: node scripts/build.mjs [chrome|edge|brave|opera|firefox ...]
+ *
+ * Config: sykos.config.json → { "proxyUrl": "https://sykostracker-proxy.<you>.workers.dev" }
+ * (env SYKOS_PROXY_URL overrides it; env SYKOS_DIST changes the output folder).
+ * The proxy URL is public; the FACEIT key stays a secret inside the Worker.
  */
 import { build } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -19,14 +23,19 @@ import { buildManifest, TARGETS } from '../extension/manifest/build-manifest.mjs
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const r = (...p) => path.join(root, ...p);
-const out = r('dist', '_build');
+const distDir = path.resolve(root, process.env.SYKOS_DIST ?? 'dist');
+const out = path.join(distDir, '_build');
 const alias = { '@shared': r('shared'), '@ext': r('extension'), '@dash': r('dashboard') };
-// No API key is ever compiled into the extension: each user pastes their own in Settings.
-const define = { 'process.env.NODE_ENV': JSON.stringify('production') };
+// No API key is ever compiled into the extension. Only the PUBLIC proxy URL is.
+const cfg = existsSync(r('sykos.config.json')) ? JSON.parse(await readFile(r('sykos.config.json'), 'utf8')) : {};
+const proxyUrl = String(process.env.SYKOS_PROXY_URL ?? cfg.proxyUrl ?? '').trim().replace(/\/+$/, '');
+if (proxyUrl && !/^https:\/\/[^/]+$/.test(proxyUrl)) throw new Error(`proxyUrl must be https://host with no path, got "${proxyUrl}"`);
+console.log(proxyUrl ? `› proxy: ${proxyUrl}` : '› proxy: none (users must paste their own FACEIT API key)');
+const define = { 'process.env.NODE_ENV': JSON.stringify('production'), __SYKOS_PROXY_URL__: JSON.stringify(proxyUrl) };
 const targets = process.argv.slice(2).length ? process.argv.slice(2) : TARGETS;
 const pkg = JSON.parse(await readFile(r('package.json'), 'utf8'));
 
-await rm(r('dist'), { recursive: true, force: true });
+await rm(distDir, { recursive: true, force: true });
 
 const common = { root, configFile: false, logLevel: 'warn', resolve: { alias }, define, plugins: [react()] };
 
@@ -70,11 +79,11 @@ if (!existsSync(r('extension/assets/icons/icon-128.png'))) {
 }
 
 for (const t of targets) {
-  const dir = r('dist', t);
+  const dir = path.join(distDir, t);
   await mkdir(dir, { recursive: true });
   await cp(out, dir, { recursive: true });
   await cp(r('extension/assets/icons'), path.join(dir, 'icons'), { recursive: true });
-  await writeFile(path.join(dir, 'manifest.json'), JSON.stringify(buildManifest(t, pkg.version), null, 2));
-  console.log(`✓ dist/${t}`);
+  await writeFile(path.join(dir, 'manifest.json'), JSON.stringify(buildManifest(t, pkg.version, { proxyUrl }), null, 2));
+  console.log(`✓ ${path.relative(root, dir)}`);
 }
 await rm(out, { recursive: true, force: true });

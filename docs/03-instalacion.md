@@ -3,8 +3,9 @@
 ## Requisitos
 
 * Node.js 20 o superior (probado con Node 22) y npm.
-* Tu propia API key de FACEIT, gratuita (es de tipo server-side; ver [04-clave-faceit-api.md](04-clave-faceit-api.md)).
-  No hace falta ningún servidor ni cuenta propia.
+* Para el modo público (solo nickname), el Worker de Cloudflare publicado y su
+  URL en `sykos.config.json` ([08-servidor-cloudflare.md](08-servidor-cloudflare.md)).
+  Sin él, cada usuario tendrá que pegar su propia API key ([04-clave-faceit-api.md](04-clave-faceit-api.md)).
 
 ## Compilar
 
@@ -63,7 +64,7 @@ consulta [05-publicacion.md](05-publicacion.md).
 ## Primer uso
 
 1. Pulsa el icono de SykosTracker → **Configuración** (la página se abre sola al instalar).
-2. **Conexión con FACEIT**: pega tu API key y pulsa **Guardar y probar**.
+2. **Conexión con FACEIT**: con el Worker configurado aparece «✓ Listo» y no hay que hacer nada. Si no, pega tu API key y pulsa **Guardar y probar**.
 3. **Tu cuenta**: escribe tu nickname y pulsa **Vincular**.
 4. El popup muestra tu perfil, ELO, win rate y últimas partidas. **Análisis
    completo** abre la página interna de la extensión.

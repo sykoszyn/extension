@@ -28,7 +28,7 @@ export interface LimiterOptions {
 const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export function isRetryable(e: unknown): boolean {
-  if (e instanceof HttpError) return e.status === 429 || e.status >= 500;
+  if (e instanceof HttpError) return e.status === 429 || (e.status >= 500 && e.status !== 502);
   return e instanceof TypeError; // fetch network failure
 }
 

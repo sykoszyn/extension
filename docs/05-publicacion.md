@@ -16,8 +16,8 @@ versión en `package.json`: el manifest la lee de ahí.
 * [ ] Capturas de 1280×800 (puedes partir de las de `npm run build && node scripts/e2e.mjs`, en `dist/e2e/`, que usan datos de prueba; para la tienda conviene hacerlas con datos reales).
 * [ ] Justifica cada permiso (tabla de abajo).
 * [ ] Aclara que SykosTracker **no está afiliado a FACEIT** y no uses sus logotipos.
-* [ ] Explica en la ficha que hace falta **una API key propia y gratuita** de
-      developers.faceit.com (App Studio). El paquete no lleva ninguna clave.
+* [ ] Publica el Worker y pon su URL en `sykos.config.json` **antes** de `npm run pack` ([08-servidor-cloudflare.md](08-servidor-cloudflare.md)).
+* [ ] En la ficha: «Solo necesitas tu nickname de FACEIT. Opcionalmente puedes usar tu propia API key».
 
 | Permiso | Justificación |
 |---|---|
@@ -25,7 +25,8 @@ versión en `package.json`: el manifest la lee de ahí.
 | `notifications` | Aviso de «partida encontrada» |
 | `alarms` | Limpieza periódica de la caché |
 | Host `www.faceit.com` (content script) | Mostrar los paneles en perfiles y salas |
-| Host `open.faceit.com` | Consultar la FACEIT Data API oficial (única conexión externa) |
+| Host `open.faceit.com` | Consultar la FACEIT Data API oficial con la clave propia del usuario |
+| Host `sykostracker-proxy.<sub>.workers.dev` | Servidor de SykosTracker que añade la API key, para que el usuario solo tenga que poner su nickname |
 
 ## Chrome Web Store
 
@@ -33,7 +34,8 @@ versión en `package.json`: el manifest la lee de ahí.
 2. **New item** → sube `sykostracker-chrome-<v>.zip`.
 3. *Privacy practices*: propósito único («analítica de estadísticas CS2 de FACEIT»), justificación de permisos, datos recopilados («Website content / activity»: nicknames e IDs de partida que consultas, enviados a la API de FACEIT), URL de la política.
 4. *Remote code*: **No** (todo el JS va empaquetado; CSP `script-src 'self'`).
-5. *Single purpose*: todo funciona dentro de la extensión, sin servidor propio ni cuentas.
+5. *Single purpose*: estadísticas de CS2 en FACEIT. En «datos», declara que los nicknames e IDs de partida consultados pasan por el Worker de SykosTracker hacia FACEIT, y que no se guardan.
+6. Cuando tengas el ID definitivo, ponlo en `ALLOWED_ORIGINS` del Worker (paso 9 de la guía 08).
 
 **Brave** y **Opera GX** instalan directamente desde la Chrome Web Store.
 

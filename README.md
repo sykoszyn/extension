@@ -5,9 +5,11 @@ perfiles, Player vs Player, historial de partidas, Lobby Analyzer de los 10
 jugadores, Enemy Intelligence, rendimiento por mapa y comparación de equipos.
 Para Chrome, Edge, Brave, Opera y Firefox.
 
-**Sin web, sin servidor y sin cuenta propia.** Todo funciona dentro de la
-extensión, los datos se guardan en tu navegador y la única conexión externa es
-la API oficial de FACEIT.
+**Solo tu nickname: sin registro ni cuentas.** Todo funciona dentro de la
+extensión y los datos se guardan en tu navegador. Las consultas a FACEIT pasan
+por un servidor mínimo en Cloudflare que añade la API key del editor (sin
+guardar nada). Quien quiera puede usar su propia key y hablar directamente con
+FACEIT.
 
 > SykosTracker es un proyecto independiente y **no está afiliado a FACEIT ni a
 > Valve**. Todas las estadísticas vienen de la FACEIT Data API oficial. Si un
@@ -39,15 +41,17 @@ npm install
 npm run build
 ```
 
-Carga `dist/chrome` (o `dist/firefox`, etc.) como extensión descomprimida. Después,
-en *Configuración*, pega **tu propia** API key de FACEIT (es gratis, en
-developers.faceit.com → App Studio) y vincula tu nickname.
+Para que funcione **para todo el público con solo el nickname**, publica antes el
+servidor de Cloudflare y pon su URL en `sykos.config.json`. Tienes la guía paso a
+paso en [docs/08-servidor-cloudflare.md](docs/08-servidor-cloudflare.md).
+Después, carga `dist/chrome` (o la carpeta de tu navegador) como extensión
+descomprimida.
 
 > **Por qué hace falta una clave.** La FACEIT Data API no admite peticiones
-> anónimas, y App Studio solo emite claves **server-side**, que son secretas. Por
-> eso la extensión **no lleva ninguna clave**: cada usuario pega la suya, se
-> guarda solo en su navegador y solo se envía a `open.faceit.com`. Más detalles
-> en [docs/04](docs/04-clave-faceit-api.md).
+> anónimas y App Studio solo emite claves **server-side**, que son secretas.
+> Esa clave nunca va dentro de la extensión: vive como secreto en el Worker de
+> Cloudflare (`proxy/`). Si no configuras ningún servidor, cada usuario tendrá
+> que pegar su propia clave. Más detalles en [docs/04](docs/04-clave-faceit-api.md).
 
 ## Documentación
 
@@ -58,6 +62,7 @@ developers.faceit.com → App Studio) y vincula tu nickname.
 5. [Publicación en tiendas](docs/05-publicacion.md)
 6. [Política de privacidad](docs/06-privacidad.md)
 7. [Pruebas](docs/07-testing.md)
+8. [Servidor en Cloudflare (modo público, solo nickname)](docs/08-servidor-cloudflare.md)
 
 ## Scripts
 
@@ -68,7 +73,7 @@ developers.faceit.com → App Studio) y vincula tu nickname.
 | `npm run pack` | Compila y crea los zip para las tiendas |
 | `npm run typecheck` | TypeScript estricto |
 | `npm test` | Pruebas unitarias (Vitest) |
-| `npm run e2e` | End-to-end con la extensión compilada en Chromium y la API interceptada con fixtures (requiere `build`) |
+| `npm run e2e` | End-to-end: compila una copia en `dist-e2e/` y la prueba en Chromium, con el proxy y FACEIT interceptados con fixtures |
 | `npm run icons` | Regenera los iconos PNG desde el SVG del logo |
 
 ## Estructura
@@ -78,6 +83,7 @@ extension/   background · content · popup · compat · manifest · assets
 dashboard/   components · pages · hooks · services · charts
 shared/      types · utils · constants · rpc · settings
 tests/       pruebas unitarias + fixtures deterministas
+proxy/       Worker de Cloudflare (añade la API key de FACEIT; sin estado)
 scripts/     build · pack · icons · e2e
 docs/        documentación (ES)
 ```
@@ -86,7 +92,7 @@ docs/        documentación (ES)
 
 React 18 · TypeScript · Vite · Tailwind CSS · Recharts · WebExtensions Manifest V3
 (service worker en Chromium, event page en Firefox) · `storage.local` + IndexedDB.
-Sin dependencias de servidor.
+Servidor opcional: un Cloudflare Worker sin estado (`proxy/`).
 
 ## Limitaciones conocidas
 
@@ -98,7 +104,7 @@ Sin dependencias de servidor.
 * **Lobby durante la búsqueda**: hasta que FACEIT asigna la sala no hay
   jugadores. El análisis empieza al abrir la sala (veto), antes de que empiece la
   partida.
-* **Clave de API**: FACEIT exige una clave para cualquier consulta (ver arriba).
+* **Clave de API**: FACEIT exige una clave para cualquier consulta. En el modo público, todos los usuarios comparten la cuota de la clave del editor (ver [docs/08](docs/08-servidor-cloudflare.md)).
 * **Premades**: FACEIT no publica los grupos; SykosTracker los marca como
   «posibles» cuando dos jugadores coinciden en varias de sus últimas 20 partidas.
 * **Historial PvP completo**: se escanea poco a poco (100 partidas por petición).

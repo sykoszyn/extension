@@ -19,9 +19,11 @@ export const FACEIT_API_HOSTS = ['https://open.faceit.com/*'];
 /**
  * @param {string} target
  * @param {string} version
+ * @param {{ proxyUrl?: string }} [opts] public URL of the SykosTracker Cloudflare proxy, if any
  * @returns {any}
  */
-export function buildManifest(target, version) {
+export function buildManifest(target, version, opts = {}) {
+  const hosts = [...FACEIT_API_HOSTS, ...(opts.proxyUrl ? [`${new URL(opts.proxyUrl).origin}/*`] : [])];
   if (!TARGETS.includes(target)) throw new Error(`Unknown target ${target}`);
   const icons = { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png', 48: 'icons/icon-48.png', 128: 'icons/icon-128.png' };
 
@@ -35,8 +37,9 @@ export function buildManifest(target, version) {
     action: { default_title: 'SykosTracker', default_popup: 'extension/popup/index.html', default_icon: icons },
     options_ui: { page: 'dashboard/index.html#settings', open_in_tab: true },
     permissions: ['storage', 'unlimitedStorage', 'notifications', 'alarms'],
-    // The only external host: the official FACEIT Data API. No developer server.
-    host_permissions: [...FACEIT_API_HOSTS],
+    // External hosts: the official FACEIT Data API and, if configured, the
+    // publisher's stateless Cloudflare proxy that holds the API key.
+    host_permissions: hosts,
     content_scripts: [
       {
         matches: ['https://www.faceit.com/*'],

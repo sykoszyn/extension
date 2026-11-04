@@ -1,0 +1,19 @@
+# SykosTracker FACEIT proxy — Cloudflare Worker
+name = "sykostracker-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+# Per-IP rate limit (Workers Rate Limiting). 120 requests / 60 s per IP.
+# The extension caches locally, so normal users stay far below this.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 120, period = 60 }
+
+# Optional: restrict to your published extension IDs (comma-separated, "*" suffix allowed).
+# [vars]
+# ALLOWED_ORIGINS = "chrome-extension://<chrome-id>,chrome-extension://<edge-id>,moz-extension://*"
+
+# The FACEIT key is a SECRET, never put it here:
+#   npx wrangler secret put FACEIT_API_KEY

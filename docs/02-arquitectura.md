@@ -1,6 +1,6 @@
 # Arquitectura
 
-Todo ocurre dentro de la extensión: no hay web, ni servidor, ni cuenta propia.
+Todo ocurre dentro de la extensión: no hay web ni cuenta propia. Lo único externo es un Worker de Cloudflare sin estado que añade la API key, y es opcional para quien use su propia clave.
 
 ```
 ┌──────────────────────── Navegador (extensión) ──────────────────────┐
@@ -24,9 +24,16 @@ Todo ocurre dentro de la extensión: no hay web, ni servidor, ni cuenta propia.
 │                 preferencias de Auto Accept                         │
 │  IndexedDB:     caché de la API, historial descubierto, ELO         │
 └────────────────┬────────────────────────────────────────────────────┘
-                 │ HTTPS (única conexión externa)
-                 ▼
-        open.faceit.com/data/v4  (FACEIT Data API oficial)
+                 │ HTTPS
+        ┌────────┴──────────────────────────┐
+        ▼ (por defecto, sin clave)          ▼ (si el usuario pegó su clave)
+  Cloudflare Worker  proxy/            open.faceit.com/data/v4
+  · añade FACEIT_API_KEY (secreto)     (directo, Bearer <clave del usuario>)
+  · solo rutas permitidas, rate limit/IP
+  · caché, sin estado ni datos de usuarios
+        │
+        ▼
+  open.faceit.com/data/v4
 ```
 
 ## Módulos
@@ -44,13 +51,14 @@ Todo ocurre dentro de la extensión: no hay web, ni servidor, ni cuenta propia.
 | `shared/rpc.ts` | Contrato RPC tipado entre la interfaz y el background. |
 | `shared/settings.ts` | Ajustes, favoritos y búsquedas recientes en `storage.local`. Invariante: Auto Accept no puede estar activo sin haber aceptado el aviso. |
 | `extension/compat/browser.ts` | **Capa de compatibilidad**: `browser`/`chrome`, mensajes asíncronos, notificaciones (Firefox ignora `requireInteraction`), `storage.session`. |
-| `extension/background/` | `index.ts` (router), `faceit-client.ts` (endpoints + TTL), `transport.ts` (conexión directa con FACEIT, resolución de la clave, lista de rutas permitidas), `rate-limiter.ts`, `db.ts` (IndexedDB + caché), `history-scan.ts`, `services.ts` (PvP, lobby, Enemy Intel). |
+| `extension/background/` | `index.ts` (router), `faceit-client.ts` (endpoints + TTL), `transport.ts` (elige proxy o clave propia, lista de rutas permitidas), `rate-limiter.ts`, `db.ts` (IndexedDB + caché), `history-scan.ts`, `services.ts` (PvP, lobby, Enemy Intel). |
 | `extension/content/` | `index.tsx` (montaje en Shadow DOM, router SPA, paneles), `auto-accept.ts` (detección conservadora y clic seguro), `AcceptOverlay.tsx`. |
 | `extension/popup/` | Popup: tu perfil, buscador, accesos directos e interruptor de Auto Accept. |
 | `extension/manifest/build-manifest.mjs` | Manifest por navegador. |
 | `dashboard/components` | Sistema de diseño (`ui.tsx`) y componentes de cada función: `PlayerOverview`, `PvpPanel`, `MatchHistory`, `LobbyView`, `EnemyIntel`, `MapPerformance`, `PlayerSearch`. Los usan el dashboard y el content script. |
 | `dashboard/charts` | Envoltorios de Recharts con la especificación visual (paleta validada para daltonismo y fondo oscuro). |
 | `dashboard/pages`, `hooks` | Páginas del dashboard, enrutado por hash, `useRpc`, `useSettings`, `useFavorites`. |
+| `proxy/` | Cloudflare Worker: lista de rutas y parámetros permitidos, secreto `FACEIT_API_KEY`, rate limit por IP, caché. Sin estado. |
 | `tests/` | Pruebas unitarias (Vitest) y fixtures deterministas. |
 | `scripts/` | `build.mjs`, `pack.mjs`, `icons.mjs`, `e2e.mjs` (Chromium real, con la API interceptada). |
 
@@ -77,8 +85,8 @@ Todo ocurre dentro de la extensión: no hay web, ni servidor, ni cuenta propia.
 
 ## Seguridad y privacidad
 
-* Sin cuenta propia, sin servidor y sin telemetría. La única conexión externa es
-  `open.faceit.com` (comprobado en el e2e).
+* Sin cuenta propia y sin telemetría. Las conexiones externas son solo el Worker
+  de SykosTracker y/o `open.faceit.com` (comprobado en el e2e).
 * Ni contraseñas, ni cookies, ni tokens de FACEIT. Lo único que se guarda del
   usuario es su nickname público, su ID y su propia API key, todo en
   `storage.local`.
@@ -89,7 +97,7 @@ Todo ocurre dentro de la extensión: no hay web, ni servidor, ni cuenta propia.
 * Peticiones con `credentials: 'omit'` y sin `Referer`, y solo a una lista de
   rutas permitidas de solo lectura.
 * Permisos mínimos: `storage`, `unlimitedStorage`, `notifications`, `alarms`.
-  Host: `open.faceit.com`. El content script solo se ejecuta en
+  Hosts: `open.faceit.com` y el origen del Worker (se añade al compilar si hay `proxyUrl`). El content script solo se ejecuta en
   `https://www.faceit.com/*`. Sin `tabs`, `cookies`, `webRequest` ni `<all_urls>`.
 * CSP de las páginas de la extensión: `script-src 'self'`; no se carga código remoto.
 * El background solo acepta mensajes de la propia extensión.

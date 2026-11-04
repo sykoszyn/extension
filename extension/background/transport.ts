@@ -1,12 +1,15 @@
 /**
- * Network transport to the FACEIT Data API v4 — the ONLY external host the
- * extension talks to. There is no SykosTracker server.
+ * Network transport to the FACEIT Data API v4.
  *
- * Authentication: FACEIT's Data API always requires a Bearer API key, and
- * FACEIT App Studio currently issues **server-side** keys. The key is the
- * user's OWN, pasted in Settings, stored only in this browser's
- * storage.local and sent only to open.faceit.com from the background worker.
- * No key is ever compiled into the distributed extension. See docs/04.
+ * FACEIT's Data API always requires a Bearer API key (App Studio issues
+ * server-side, i.e. secret, keys). Two routes, chosen automatically:
+ *
+ *  1. **Own key** — if the user pasted their own key in Settings, requests go
+ *     straight to open.faceit.com with it. Stored only in storage.local.
+ *  2. **SykosTracker proxy** (default for everyone else) — requests go to the
+ *     publisher's stateless Cloudflare Worker (proxy/), which adds the
+ *     publisher's key server-side. Its public URL is compiled in from
+ *     sykos.config.json; the key itself never ships in the extension.
  *
  * Only an allow-listed set of read-only GET paths can be requested.
  */
@@ -33,10 +36,25 @@ export class ConfigError extends Error {
   code = 'NOT_CONFIGURED';
 }
 
-/** The user's own key from local settings, if any. */
-export function resolveKey(settings: Settings): { key: string; source: 'user' | 'none' } {
+declare const __SYKOS_PROXY_URL__: string;
+export const PROXY_URL: string = typeof __SYKOS_PROXY_URL__ === 'string' ? __SYKOS_PROXY_URL__ : '';
+
+export type KeySource = 'user' | 'proxy' | 'none';
+
+/** Own key wins; otherwise the built-in proxy; otherwise not configured. */
+export function resolveKey(settings: Settings, proxyUrl = PROXY_URL): { key: string; source: KeySource } {
   const key = settings.faceitApiKey.trim();
-  return key ? { key, source: 'user' } : { key: '', source: 'none' };
+  if (key) return { key, source: 'user' };
+  if (proxyUrl) return { key: '', source: 'proxy' };
+  return { key: '', source: 'none' };
+}
+
+/** Builds the request for either route. Exported for tests. */
+export function buildRequest(settings: Settings, path: string, query: Query, proxyUrl = PROXY_URL): { url: string; headers: Record<string, string> } {
+  const { key, source } = resolveKey(settings, proxyUrl);
+  if (source === 'user') return { url: `${FACEIT_API_BASE}${path}${qs(query)}`, headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' } };
+  if (source === 'proxy') return { url: `${proxyUrl}/data/v4${path}${qs(query)}`, headers: { Accept: 'application/json' } };
+  throw new ConfigError('Esta versión no tiene servidor configurado: añade tu API key de FACEIT en Configuración → Conexión con FACEIT.');
 }
 
 function qs(q: Query): string {
@@ -63,6 +81,7 @@ async function fail(res: Response): Promise<never> {
   }
   const human: Record<number, string> = {
     401: 'FACEIT ha rechazado la clave de API (401). Revisa que la hayas copiado entera y que no esté revocada.',
+    502: 'El servidor de SykosTracker no puede contactar con FACEIT ahora mismo (502). Inténtalo en unos minutos o usa tu propia API key.',
     403: 'FACEIT ha denegado el acceso (403).',
     404: 'No encontrado en FACEIT (404).',
     429: 'Límite de peticiones de FACEIT alcanzado; reintentando…',
@@ -72,15 +91,10 @@ async function fail(res: Response): Promise<never> {
 
 export async function faceitGet<T = any>(settings: Settings, path: string, query: Query = {}): Promise<T> {
   if (!ALLOWED_PATHS.some((re) => re.test(path))) throw new Error(`Ruta no permitida: ${path}`);
-  const { key } = resolveKey(settings);
-  if (!key) throw new ConfigError('Añade tu API key de FACEIT en Configuración → Conexión con FACEIT.');
+  const { url, headers } = buildRequest(settings, path, query);
 
   return limiter.run(async () => {
-    const res = await fetch(`${FACEIT_API_BASE}${path}${qs(query)}`, {
-      headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
-      credentials: 'omit',
-      referrerPolicy: 'no-referrer',
-    });
+    const res = await fetch(url, { headers, credentials: 'omit', referrerPolicy: 'no-referrer' });
     if (!res.ok) await fail(res);
     return (await res.json()) as T;
   });

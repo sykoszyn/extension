@@ -1,8 +1,14 @@
 # Acceso a la FACEIT Data API (sin backend)
 
-SykosTracker funciona **entero dentro del navegador**. No tiene servidor propio,
-no usa cuentas propias y no depende de Supabase ni de ningún otro servicio. La
-única conexión externa es la **API oficial de FACEIT** (`https://open.faceit.com/data/v4`).
+SykosTracker funciona dentro del navegador y no usa cuentas propias. Para hablar
+con la **API oficial de FACEIT** (`https://open.faceit.com/data/v4`) hay dos vías,
+que se eligen solas:
+
+1. **Servidor de SykosTracker (modo público, por defecto).** Un Worker de
+   Cloudflare sin estado añade la clave del editor. El usuario solo pone su nick.
+   Ver [08-servidor-cloudflare.md](08-servidor-cloudflare.md).
+2. **Clave propia del usuario (opcional).** Si la pega en *Configuración*, la
+   extensión habla directamente con FACEIT y deja de usar el servidor.
 
 ## La limitación que conviene conocer
 
@@ -12,23 +18,22 @@ FACEIT solo emite claves **server-side**.
 
 Una clave server-side es **secreta**. Por eso SykosTracker sigue estas reglas:
 
-* **Nunca va dentro de la extensión publicada.** El código no lleva ninguna
-  clave, y la opción de incluir una al compilar se ha eliminado.
-* **Cada usuario pega la suya** en *Configuración*. Se guarda solo en el
+* **Nunca va dentro de la extensión publicada.** El código no lleva ninguna clave.
+* **La clave del editor** vive como secreto cifrado en el Worker de Cloudflare.
+* **La clave propia de un usuario** (opcional) se guarda solo en el
   `storage.local` de su navegador, que no puede leer ninguna web (tampoco
   faceit.com), y solo la usa el service worker para llamar a `open.faceit.com`.
-* Es tu clave y tu cuota. Si crees que se ha filtrado, revócala en App Studio y
-  crea otra.
+* Si crees que una clave se ha filtrado, revócala en App Studio y crea otra.
 
 Alternativas:
 
 | Opción | Ventaja | Inconveniente |
 |---|---|---|
-| **Clave propia de cada usuario (la que se usa)** | Sin servidor ni cuentas; cada uno tiene su cuota y su riesgo | Cada usuario tiene que crear la suya (2 minutos) |
+| **Worker de Cloudflare con la clave del editor (por defecto)** | El usuario solo pone su nick; sin cuentas; gratis hasta 100 000 peticiones al día | Todos comparten la cuota de la clave del editor; hay que mantener el Worker |
+| **Clave propia del usuario (opcional)** | Directo con FACEIT, sin intermediarios; cuota propia | El usuario tiene que crearla (2 minutos) |
 | Incluir una clave server-side en el paquete | Funciona nada más instalarla | **Descartada**: cualquiera podría extraerla del paquete |
-| Backend propio con la clave guardada en el servidor | Los usuarios no necesitan clave | Hace falta un servidor; descartado por los requisitos del producto. Si algún día se quiere, solo habría que cambiar `extension/background/transport.ts` |
 
-## Crear tu clave
+## Crear una clave (la del Worker o la tuya propia)
 
 1. Entra en <https://developers.faceit.com> con tu cuenta de FACEIT.
 2. **App Studio → Create App**: pon un nombre (p. ej. «SykosTracker personal»).
@@ -41,13 +46,14 @@ Alternativas:
 
 ## Qué se envía y adónde
 
-* **Destino**: solo `open.faceit.com`, con `credentials: 'omit'` y sin `Referer`.
+* **Destino**: el Worker de SykosTracker (modo público) o `open.faceit.com`
+  (clave propia), siempre con `credentials: 'omit'` y sin `Referer`.
 * **Contenido**: nicknames, IDs de jugador e IDs de partida que consultas, y la
   clave en la cabecera `Authorization`.
 * **Nunca**: cookies, tokens de sesión ni contraseñas de FACEIT.
 
 La prueba end-to-end lo comprueba: falla si la extensión hace cualquier petición
-a un dominio que no sea de FACEIT.
+a otro dominio que no sea FACEIT o el Worker, o si envía alguna clave al Worker.
 
 ## Cuota y límites
 
@@ -63,7 +69,8 @@ FACEIT limita las peticiones por clave. SykosTracker gasta poco:
 
 | Mensaje | Causa |
 |---|---|
-| «Añade tu API key de FACEIT…» | No hay ninguna clave configurada |
+| «Esta versión no tiene servidor configurado…» | Se compiló sin `proxyUrl` y el usuario no tiene clave propia |
+| «El servidor de SykosTracker no puede contactar con FACEIT (502)» | FACEIT caído, o la clave del Worker revocada o mal configurada |
 | «FACEIT ha rechazado la clave de API (401)» | Clave mal copiada o revocada |
 | «Límite de peticiones de FACEIT alcanzado» | Cuota agotada; SykosTracker reintenta solo |
 | «No encontrado en FACEIT (404)» | El nickname o la partida no existen |

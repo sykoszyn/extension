@@ -9,7 +9,7 @@ import { clearCache, idb, pruneCache } from './db';
 import { FaceitClient } from './faceit-client';
 import { HttpError } from './rate-limiter';
 import { analyzeLobby, analyzePvp, lobbyIntelFor } from './services';
-import { ConfigError, resolveKey } from './transport';
+import { ConfigError, PROXY_URL, resolveKey } from './transport';
 
 const client = new FaceitClient(getSettings);
 
@@ -27,7 +27,7 @@ const handlers: Handlers = {
   'pvp.analyze': async (p) => analyzePvp(client, await getSettings(), p),
   'lobby.analyze': (p) => analyzeLobby(client, p.matchId, p.force),
   'lobby.intel': async (p) => lobbyIntelFor(client, await getSettings(), p.matchId, !!p.scanOlder),
-  'api.status': async () => ({ keySource: resolveKey(await getSettings()).source }),
+  'api.status': async () => ({ keySource: resolveKey(await getSettings()).source, proxyAvailable: !!PROXY_URL }),
   'ui.openDashboard': async (p) => {
     await openTab(getURL(`dashboard/index.html${p.hash ? `#${p.hash.replace(/^#/, '')}` : ''}`));
     return true;
@@ -53,7 +53,8 @@ const handlers: Handlers = {
       const s = await getSettings();
       const probe = s.myNickname || 's1mple';
       const p = await client.resolvePlayer(probe, true);
-      return { ok: true, message: `Conexión directa con FACEIT correcta. Encontrado: ${p.nickname}${p.elo ? ` (${p.elo} ELO)` : ''}.` };
+      const via = resolveKey(s).source === 'proxy' ? 'a través del servidor de SykosTracker' : 'directa con tu API key';
+      return { ok: true, message: `Conexión con FACEIT correcta (${via}). Encontrado: ${p.nickname}${p.elo ? ` (${p.elo} ELO)` : ''}.` };
     } catch (e) {
       return { ok: false, message: String((e as Error).message) };
     }

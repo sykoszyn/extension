@@ -22,8 +22,14 @@ describe('per-browser manifests', () => {
       expect(m.permissions.sort()).toEqual(['alarms', 'notifications', 'storage', 'unlimitedStorage']);
       expect(JSON.stringify(m)).not.toMatch(/cookies|webRequest|"tabs"|<all_urls>/);
       expect(m.content_scripts[0].matches).toEqual(['https://www.faceit.com/*']);
-      // Only the official FACEIT API — no developer backend.
+      // Without a proxy configured: only the official FACEIT API.
       expect(m.host_permissions).toEqual(['https://open.faceit.com/*']);
+    }
+  });
+  it('adds exactly the proxy origin when one is configured', () => {
+    for (const t of TARGETS) {
+      const m = buildManifest(t, '1.0.0', { proxyUrl: 'https://sykostracker-proxy.me.workers.dev' });
+      expect(m.host_permissions).toEqual(['https://open.faceit.com/*', 'https://sykostracker-proxy.me.workers.dev/*']);
     }
   });
 });

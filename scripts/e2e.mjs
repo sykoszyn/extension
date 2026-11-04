@@ -2,7 +2,11 @@
 /**
  * End-to-end check of the BUILT Chrome extension in real Chromium.
  *
- *   npm run build && node scripts/e2e.mjs
+ *   npm run e2e
+ *
+ * Builds its own copy (dist-e2e/chrome) with a test proxy URL compiled in, so
+ * the public default (no API key, via the SykosTracker proxy) is what gets
+ * tested, plus the "own API key → straight to FACEIT" path.
  *
  * Loads dist/chrome, intercepts requests to open.faceit.com with deterministic
  * fixtures (no real key needed), and drives the popup, the internal dashboard
@@ -11,6 +15,7 @@
  * $E2E_OUT (default: dist/e2e).
  */
 import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -20,7 +25,13 @@ import { ME, RIVAL, LIVE_MATCH_ID, MATCHES, handle } from '../tests/fixtures/moc
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const root = fileURLToPath(new URL('..', import.meta.url));
-const ext = path.join(root, 'dist/chrome');
+const PROXY = 'https://sykos-proxy.e2e.test';
+const built = spawnSync(process.execPath, [path.join(root, 'scripts/build.mjs'), 'chrome'], {
+  env: { ...process.env, SYKOS_PROXY_URL: PROXY, SYKOS_DIST: 'dist-e2e' },
+  stdio: 'inherit',
+});
+if (built.status !== 0) process.exit(1);
+const ext = path.join(root, 'dist-e2e/chrome');
 const out = process.env.E2E_OUT ?? path.join(root, 'dist/e2e');
 await mkdir(out, { recursive: true });
 
@@ -43,20 +54,23 @@ const step = async (name, fn) => {
   }
 };
 
-// Every FACEIT Data API call (made by the extension's service worker) is answered from fixtures.
+// Every FACEIT Data API call (made by the extension's service worker) is answered
+// from fixtures — whether it goes to the SykosTracker proxy or straight to FACEIT.
 const apiCalls = [];
-await ctx.route('https://open.faceit.com/data/v4/**', (route) => {
+const answer = (route) => {
   const req = route.request();
   const url = new URL(req.url());
-  apiCalls.push({ path: url.pathname, auth: req.headers()['authorization'] });
+  apiCalls.push({ host: url.host, path: url.pathname, auth: req.headers()['authorization'] });
   const out = handle(url.pathname.replace('/data/v4', ''), Object.fromEntries(url.searchParams));
   return route.fulfill({ status: out.status, contentType: 'application/json', body: JSON.stringify(out.body) });
-});
+};
+await ctx.route('https://open.faceit.com/data/v4/**', answer);
+await ctx.route(`${PROXY}/data/v4/**`, answer);
 // Anything else outside FACEIT would be a privacy regression.
 const foreign = [];
 ctx.on('request', (r) => {
   const u = new URL(r.url());
-  if (!['chrome-extension:', 'data:', 'blob:'].includes(u.protocol) && !/(^|\.)faceit\.com$/.test(u.hostname)) foreign.push(r.url());
+  if (!['chrome-extension:', 'data:', 'blob:'].includes(u.protocol) && !/(^|\.)faceit\.com$/.test(u.hostname) && u.origin !== PROXY) foreign.push(r.url());
 });
 
 try {
@@ -66,7 +80,8 @@ try {
   await sw.evaluate(
     ([me]) =>
       chrome.storage.local.set({
-        'sykos.settings': { faceitApiKey: 'test-client-key', myNickname: 'Sykos', myPlayerId: me },
+        // Public default: no API key at all, just the linked nickname.
+        'sykos.settings': { myNickname: 'Sykos', myPlayerId: me },
       }),
     [ME.id],
   );
@@ -214,10 +229,24 @@ try {
     assert.equal(await fp.evaluate(() => window.__accepted ?? 0), 0);
     await fp.close();
   });
-  await step('Network: only open.faceit.com, with the user key, no other servers', async () => {
+  await step('Network (no key): everything via the SykosTracker proxy, no key sent, no other hosts', async () => {
     assert.ok(apiCalls.length > 10, `expected API calls, got ${apiCalls.length}`);
-    assert.ok(apiCalls.every((c) => c.auth === 'Bearer test-client-key'));
+    assert.ok(apiCalls.every((c) => c.host === new URL(PROXY).host), 'a call bypassed the proxy');
+    assert.ok(apiCalls.every((c) => !c.auth), 'the extension must not send any key to the proxy');
     assert.deepEqual(foreign, []);
+  });
+
+  await step('Own API key: goes straight to open.faceit.com with Bearer', async () => {
+    apiCalls.length = 0;
+    await sw.evaluate(async () => {
+      const s = (await chrome.storage.local.get('sykos.settings'))['sykos.settings'];
+      await chrome.storage.local.set({ 'sykos.settings': { ...s, faceitApiKey: 'user-own-key' } });
+    });
+    await dash('settings');
+    await page.getByRole('button', { name: 'Guardar y probar' }).click();
+    await page.getByText(/Conexión con FACEIT correcta \(directa con tu API key\)/).waitFor({ timeout: 15000 });
+    assert.ok(apiCalls.length >= 1);
+    assert.ok(apiCalls.every((c) => c.host === 'open.faceit.com' && c.auth === 'Bearer user-own-key'));
   });
 } finally {
   await ctx.close();

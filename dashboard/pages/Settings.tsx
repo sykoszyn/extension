@@ -46,19 +46,20 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
   const [nick, setNick] = useState(settings.myNickname);
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [keySource, setKeySource] = useState<'user' | 'none' | null>(null);
+  const [api, setApi] = useState<{ keySource: 'user' | 'proxy' | 'none'; proxyAvailable: boolean } | null>(null);
+  const [ownKeyOpen, setOwnKeyOpen] = useState(false);
   useEffect(() => setDraft(settings), [settings]);
   useEffect(() => {
     rpc('api.status', {})
-      .then((r) => setKeySource(r.keySource))
-      .catch(() => setKeySource(null));
+      .then(setApi)
+      .catch(() => setApi(null));
   }, []);
 
   const saveConnection = async () => {
     setBusy(true);
     setStatus(null);
     await update({ faceitApiKey: draft.faceitApiKey.trim().replace(/^Bearer\s+/i, '') });
-    setKeySource((await rpc('api.status', {}).catch(() => ({ keySource: 'none' as const }))).keySource);
+    setApi(await rpc('api.status', {}).catch(() => null));
     const r = await rpc('api.test', {}).catch((e) => ({ ok: false, message: String(e.message) }));
     setStatus({ ok: r.ok, msg: r.message });
     setBusy(false);
@@ -101,42 +102,54 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
 
       <Card title="Conexión con FACEIT">
         <div className="space-y-3">
+          {api && (
+            <div
+              className={cx(
+                'rounded-lg border px-3 py-2 text-[13px]',
+                api.keySource === 'none' ? 'border-blood-500/30 bg-blood-500/[0.07] text-blood-400' : 'border-win/25 bg-win/[0.05] text-win',
+              )}
+            >
+              {api.keySource === 'proxy' && '✓ Listo. Usando el servidor de SykosTracker: no necesitas ninguna clave, solo tu nickname.'}
+              {api.keySource === 'user' && '✓ Usando tu propia API key, directamente con open.faceit.com.'}
+              {api.keySource === 'none' && 'Esta versión no incluye servidor: añade tu propia API key de FACEIT abajo.'}
+            </div>
+          )}
           <p className="text-[12px] text-fog-400">
-            SykosTracker funciona solo en tu navegador. Habla directamente con la API oficial de FACEIT (<span className="font-mono">open.faceit.com</span>), sin servidores
-            intermedios ni cuentas propias. FACEIT exige una clave de API para cualquier consulta.
+            FACEIT exige una clave para cualquier consulta. Por defecto SykosTracker usa su propio servidor, que añade la clave sin guardar nada tuyo. Si lo prefieres, puedes
+            usar tu propia clave y hablar directamente con FACEIT.
           </p>
-          <Field
-            label="Tu FACEIT API key"
-            hint={
-              <>
-                Gratis en{' '}
-                <a className="text-ember-400 hover:underline" href="https://developers.faceit.com" target="_blank" rel="noreferrer">
-                  developers.faceit.com
-                </a>{' '}
-                → App Studio → tu app → API Keys. FACEIT da claves de tipo <b>Server side</b>: es la correcta. Se guarda solo en este navegador.
-              </>
-            }
-          >
-            <input className="st-input font-mono" type="password" autoComplete="off" value={draft.faceitApiKey} onChange={(e) => setDraft({ ...draft, faceitApiKey: e.target.value })} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-          </Field>
-          <Notice tone="warn">
-            Es una clave <b>personal y secreta</b>: SykosTracker solo la guarda en este navegador y solo la envía a <span className="font-mono">open.faceit.com</span>. No la
-            compartas, no la publiques ni la pegues en ningún otro sitio. Si crees que se ha filtrado, revócala en App Studio y crea otra. Nunca pongas aquí la contraseña de tu
-            cuenta.
-          </Notice>
+
+          {api?.proxyAvailable && !ownKeyOpen && !draft.faceitApiKey ? (
+            <button className="text-[12px] text-ember-400 hover:underline" onClick={() => setOwnKeyOpen(true)}>
+              Avanzado: usar mi propia API key (opcional)
+            </button>
+          ) : (
+            <>
+              <Field
+                label={api?.proxyAvailable ? 'Tu FACEIT API key (opcional)' : 'Tu FACEIT API key'}
+                hint={
+                  <>
+                    Gratis en{' '}
+                    <a className="text-ember-400 hover:underline" href="https://developers.faceit.com" target="_blank" rel="noreferrer">
+                      developers.faceit.com
+                    </a>{' '}
+                    → App Studio → tu app → API Keys (tipo <b>Server side</b>). Se guarda solo en este navegador.{api?.proxyAvailable && ' Déjala vacía para usar el servidor de SykosTracker.'}
+                  </>
+                }
+              >
+                <input className="st-input font-mono" type="password" autoComplete="off" value={draft.faceitApiKey} onChange={(e) => setDraft({ ...draft, faceitApiKey: e.target.value })} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+              </Field>
+              <Notice tone="warn">
+                Es una clave <b>personal y secreta</b>: SykosTracker solo la guarda en este navegador y solo la envía a <span className="font-mono">open.faceit.com</span>. No la
+                compartas. Si crees que se ha filtrado, revócala en App Studio y crea otra.
+              </Notice>
+            </>
+          )}
           <div className="flex flex-wrap items-center gap-3">
             <button className="st-btn-primary" disabled={busy} onClick={saveConnection}>
-              Guardar y probar
+              {ownKeyOpen || draft.faceitApiKey || !api?.proxyAvailable ? 'Guardar y probar' : 'Probar conexión'}
             </button>
             {busy && <Spinner />}
-            {keySource && (
-              <span className="text-[12px] text-fog-400">
-                Clave en uso:{' '}
-                <b className={keySource === 'none' ? 'text-blood-400' : 'text-fog-100'}>
-                  {keySource === 'user' ? 'configurada' : 'ninguna'}
-                </b>
-              </span>
-            )}
           </div>
         </div>
       </Card>
