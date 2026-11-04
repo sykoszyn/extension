@@ -110,6 +110,20 @@ try {
     assert.equal(await tile('Como compañeros'), String(shared - enemy));
     await page.getByText('Historial completo analizado').waitFor();
     await shot('02-pvp');
+    // Regression: the suggestion list must float ABOVE the VS card, not behind it.
+    const search = page.locator('main input[aria-label="Buscar jugador"]');
+    await search.fill('Play');
+    const option = page.locator('main [role="listbox"] button').first();
+    await option.waitFor({ timeout: 10000 });
+    const onTop = await option.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !!hit && el.contains(hit);
+    });
+    assert.ok(onTop, 'search suggestions are hidden behind the stats cards');
+    await shot('02b-pvp-search-open');
+    await search.press('Escape');
+    await option.waitFor({ state: 'detached', timeout: 3000 });
   });
 
   await step('Match history + expandable scoreboard', async () => {

@@ -42,6 +42,8 @@ export function PlayerSearch({ onSelect, placeholder = 'Nickname, URL de FACEIT 
     await pushRecentSearch(hit);
     setQ('');
     setHits([]);
+    setFocus(false);
+    (document.activeElement as HTMLElement | null)?.blur?.();
     onSelect({ kind: 'player', id: hit.id, nickname: hit.nickname });
   };
 
@@ -66,7 +68,8 @@ export function PlayerSearch({ onSelect, placeholder = 'Nickname, URL de FACEIT 
 
   const showDrop = focus && (hits.length > 0 || (!q && recent.length > 0));
   return (
-    <div className="relative w-full">
+    // z-40 + isolate: the suggestion list must float above the cards rendered after the search box.
+    <div className="relative isolate z-40 w-full">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -85,6 +88,12 @@ export function PlayerSearch({ onSelect, placeholder = 'Nickname, URL de FACEIT 
           onChange={(e) => setQ(e.target.value)}
           onFocus={() => setFocus(true)}
           onBlur={() => setTimeout(() => setFocus(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setFocus(false);
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
           placeholder={placeholder}
           aria-label="Buscar jugador"
         />
@@ -92,7 +101,7 @@ export function PlayerSearch({ onSelect, placeholder = 'Nickname, URL de FACEIT 
       </form>
       {error && <p className="mt-1 text-[12px] text-blood-400">{error}</p>}
       {showDrop && (
-        <div className="absolute z-40 mt-1 w-full overflow-hidden rounded-xl border border-white/10 bg-ink-800 shadow-2xl">
+        <div role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[320px] overflow-y-auto rounded-xl border border-white/10 bg-ink-800 shadow-[0_20px_50px_-10px_rgba(0,0,0,.9)]">
           {!q && <div className="st-label px-3 pt-2">Búsquedas recientes</div>}
           {(q ? hits : recent).map((h) => (
             <button key={h.id} className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-white/[0.05]" onMouseDown={(e) => e.preventDefault()} onClick={() => void choose(h)}>

@@ -76,7 +76,7 @@ export function ComparePage({ arg, settings }: { arg: string | null; settings: S
   if (!settings.myPlayerId) return <NeedMe />;
   return (
     <div className="space-y-4">
-      <Card title="Comparar jugador">
+      <Card title="Comparar jugador" className="z-30">
         <p className="mb-3 text-[13px] text-fog-400">Busca a un jugador para ver cuántas veces habéis jugado juntos o en contra.</p>
         <PlayerSearch onSelect={(r) => (r.kind === 'player' ? navigate('compare', r.id) : navigate('lobby', r.id))} autoFocus={!arg} />
       </Card>

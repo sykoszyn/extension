@@ -1,6 +1,6 @@
 {
   "name": "sykostracker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "SykosTracker — FACEIT / Counter-Strike 2 analytics browser extension",
   "type": "module",
