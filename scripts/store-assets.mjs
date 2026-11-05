@@ -6,7 +6,7 @@
  *   node scripts/store-assets.mjs        → dist/store/*.png
  *
  * Output (exact sizes required by the stores):
- *   screenshot-1..5.png   1280×800
+ *   screenshot-1..4.png   1280×800
  *   promo-small.png        440×280
  *   promo-marquee.png     1400×560
  *
@@ -26,7 +26,9 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const out = process.env.STORE_OUT ?? path.join(root, 'dist/store');
 await mkdir(out, { recursive: true });
 
-const PROXY = 'https://sykos-proxy.store.test';
+// REAL mode: STORE_REAL_PROXY=https://<your-worker> STORE_REAL_NICK=<nick> → live FACEIT data.
+const REAL = process.env.STORE_REAL_PROXY && process.env.STORE_REAL_NICK ? { proxy: process.env.STORE_REAL_PROXY.replace(/\/+$/, ''), nick: process.env.STORE_REAL_NICK } : null;
+const PROXY = REAL ? REAL.proxy : 'https://sykos-proxy.store.test';
 const built = spawnSync(process.execPath, [path.join(root, 'scripts/build.mjs'), 'chrome'], {
   env: { ...process.env, SYKOS_PROXY_URL: PROXY, SYKOS_DIST: 'dist-store' },
   stdio: 'inherit',
@@ -41,13 +43,17 @@ const ctx = await chromium.launchPersistentContext('', {
   viewport: { width: 1440, height: 900 },
   deviceScaleFactor: 2,
   args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`],
+  // In REAL mode the browser must reach the worker through the environment's HTTPS proxy, if any.
+  ...(REAL && process.env.HTTPS_PROXY ? { proxy: { server: process.env.HTTPS_PROXY } } : {}),
 });
-const answer = (route) => {
-  const url = new URL(route.request().url());
-  const r = handle(url.pathname.replace('/data/v4', ''), Object.fromEntries(url.searchParams));
-  return route.fulfill({ status: r.status, contentType: 'application/json', body: JSON.stringify(r.body) });
-};
-await ctx.route(`${PROXY}/data/v4/**`, answer);
+if (!REAL) {
+  const answer = (route) => {
+    const url = new URL(route.request().url());
+    const r = handle(url.pathname.replace('/data/v4', ''), Object.fromEntries(url.searchParams));
+    return route.fulfill({ status: r.status, contentType: 'application/json', body: JSON.stringify(r.body) });
+  };
+  await ctx.route(`${PROXY}/data/v4/**`, answer);
+}
 // Neutral stand-in for a faceit.com page (no FACEIT branding is reproduced).
 const stub = `<!doctype html><html><body style="margin:0;background:#16171b;font-family:system-ui">
   <div style="height:64px;background:#101114;border-bottom:1px solid #222"></div>
@@ -59,7 +65,34 @@ await ctx.route('https://www.faceit.com/**', (r) => r.fulfill({ contentType: 'te
 let [sw] = ctx.serviceWorkers();
 sw ??= await ctx.waitForEvent('serviceworker');
 const id = new URL(sw.url()).host;
-await sw.evaluate(([me]) => chrome.storage.local.set({ 'sykos.settings': { myNickname: 'Sykos', myPlayerId: me } }), [ME.id]);
+// Subjects: demo fixtures, or (REAL) your account, your latest match room and your most frequent co-player.
+let subject = { meId: ME.id, meNick: 'Sykos', roomId: LIVE_MATCH_ID, otherNick: RIVAL.nickname };
+if (REAL) {
+  subject = await sw.evaluate(
+    async ({ proxy, nick }) => {
+      // Retry politely if the worker's per-IP limit (429) kicks in.
+      const get = async (p) => {
+        for (let i = 0; i < 8; i++) {
+          const r = await fetch(`${proxy}/data/v4${p}`);
+          if (r.ok) return r.json();
+          await new Promise((ok) => setTimeout(ok, 15000));
+        }
+        throw new Error(`proxy kept failing for ${p}`);
+      };
+      const me = await get(`/players?nickname=${encodeURIComponent(nick)}&game=cs2`);
+      const hist = await get(`/players/${me.player_id}/history?game=cs2&limit=100&from=1672531200`);
+      const counts = {};
+      for (const m of hist.items ?? [])
+        for (const f of ['faction1', 'faction2'])
+          for (const p of m.teams[f].players) if (p.player_id !== me.player_id) counts[p.nickname] = (counts[p.nickname] ?? 0) + 1;
+      const otherNick = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+      return { meId: me.player_id, meNick: me.nickname, roomId: hist.items[0].match_id, otherNick };
+    },
+    { proxy: REAL.proxy, nick: REAL.nick },
+  );
+  console.log(`› real data: ${subject.meNick} · room ${subject.roomId} · vs ${subject.otherNick}`);
+}
+await sw.evaluate(([id, nick]) => chrome.storage.local.set({ 'sykos.settings': { myNickname: nick, myPlayerId: id } }), [subject.meId, subject.meNick]);
 for (const p of ctx.pages()) if (p.url().includes('dashboard')) await p.close();
 
 const settle = (p, ms = 1800) => p.waitForTimeout(ms); // let rise/chart animations finish
@@ -69,8 +102,9 @@ const grab = async (name, locator) => (raw[name] = (await locator.screenshot({ a
 // ── raw captures ─────────────────────────────────────────────────────────────
 {
   const p = await ctx.newPage();
-  await p.goto(`https://www.faceit.com/en/cs2/room/${LIVE_MATCH_ID}`);
-  await p.getByText('YOUR TEAM').first().waitFor({ timeout: 30000 });
+  await p.goto(`https://www.faceit.com/en/cs2/room/${subject.roomId}`);
+  await p.getByText('Your team').first().waitFor({ timeout: 60000 });
+  await p.waitForFunction(() => !document.getElementById('sykostracker-root')?.shadowRoot?.querySelector('.animate-spin'), null, { timeout: 60000 }).catch(() => undefined);
   await settle(p);
   await grab('room', p.locator('aside[aria-label="SykosTracker"]'));
   await p.locator('aside[aria-label="SykosTracker"]').screenshot({ path: path.join(out, 'panel-sala.png'), animations: 'disabled' });
@@ -78,30 +112,19 @@ const grab = async (name, locator) => (raw[name] = (await locator.screenshot({ a
 }
 {
   const p = await ctx.newPage();
-  await p.goto('https://www.faceit.com/en/players/Player123');
-  await p.getByRole('tab', { name: 'VS tú' }).click({ timeout: 30000 });
-  await p.getByText('Partidas compartidas').waitFor({ timeout: 30000 });
-  await settle(p);
+  await p.goto(`https://www.faceit.com/en/players/${encodeURIComponent(subject.otherNick)}`);
+  await p.getByRole('tab', { name: 'VS tú' }).click({ timeout: 60000 });
+  await p.getByText('Partidas compartidas').waitFor({ timeout: 90000 });
+  await settle(p, 2500);
   await grab('pvp', p.locator('aside[aria-label="SykosTracker"]'));
+  await p.locator('aside[aria-label="SykosTracker"]').screenshot({ path: path.join(out, 'panel-vs.png'), animations: 'disabled' });
   await p.close();
 }
 {
   const p = await ctx.newPage();
   await p.setViewportSize({ width: 1440, height: 900 });
-  await p.goto(`chrome-extension://${id}/dashboard/index.html#lobby/${LIVE_MATCH_ID}`);
-  await p.getByRole('tab', { name: 'Intel' }).click({ timeout: 30000 });
-  await p.getByText('Posibles premades').waitFor({ timeout: 30000 });
-  await p.evaluate(() => {
-    // Start the capture at the analysis header (skip the URL input card).
-    const h = [...document.querySelectorAll('section')].find((s) => s.textContent?.includes('Lobby Analyzer'));
-    h?.remove();
-  });
-  await p.addStyleTag({ content: 'header.sticky{display:none!important}' }); // sticky bar would overlap the capture
-  await p.evaluate(() => scrollTo(0, 0));
-  await settle(p);
-  await grab('intel', p.locator('main'));
   await p.goto(`chrome-extension://${id}/dashboard/index.html#overview`);
-  await p.getByText('Rendimiento por mapa · lifetime').waitFor({ timeout: 30000 });
+  await p.getByText('Rendimiento por mapa · lifetime').waitFor({ timeout: 60000 });
   await p.addStyleTag({ content: 'header.sticky{display:none!important}' });
   await p.evaluate(() => scrollTo(0, 0));
   await settle(p, 2200);
@@ -115,6 +138,7 @@ const grab = async (name, locator) => (raw[name] = (await locator.screenshot({ a
   await p.getByText('Cambiar nickname').waitFor({ timeout: 30000 });
   await settle(p);
   await grab('popup', p.locator('#root'));
+  await p.locator('#root').screenshot({ path: path.join(out, 'panel-popup.png'), animations: 'disabled' });
   await p.close();
 }
 
@@ -140,12 +164,12 @@ const img = (k, style) => `<img class="shot" style="${style}" src="data:image/pn
 const slides = [
   {
     name: 'screenshot-1',
-    html: `<div style="position:absolute;left:64px;top:56px">${brand()}</div>
-      <div style="position:absolute;left:64px;top:120px;width:1152px">
-        <h1 style="font-size:64px">Analiza tu sala <em>antes de jugar</em></h1>
-        <p class="sub" style="font-size:22px;margin-top:10px">Los 10 jugadores: ELO, K/D, ADR, forma, rachas y mapas. YOUR TEAM vs ENEMY TEAM.</p>
+    html: `<div style="position:absolute;left:64px;top:64px">${brand()}</div>
+      <div style="position:absolute;left:64px;top:210px;width:400px">
+        <h1 style="font-size:70px">Tu sala,<br><em>de un vistazo</em></h1>
+        <p class="sub" style="font-size:22px;margin-top:22px">Los 10 jugadores con sus <b style="color:#f2f3f5">últimos 10 mapas</b>: WR, K/D, ADR y HS%. Y te avisa si ya jugaste <b style="color:#f2f3f5">contra</b> o <b style="color:#f2f3f5">con</b> alguno.</p>
       </div>
-      ${img('room', 'position:absolute;left:64px;top:292px;width:1152px;height:auto;object-fit:cover;object-position:top;max-height:470px')}`,
+      ${img('room', 'position:absolute;right:48px;top:40px;height:720px;width:auto;object-fit:cover;object-position:top')}`,
   },
   {
     name: 'screenshot-2',
@@ -158,24 +182,15 @@ const slides = [
   },
   {
     name: 'screenshot-3',
-    html: `<div style="position:absolute;left:64px;top:56px">${brand()}</div>
-      <div style="position:absolute;left:64px;top:120px;width:1152px">
-        <h1 style="font-size:64px">Enemy <em>Intelligence</em></h1>
-        <p class="sub" style="font-size:22px;margin-top:10px">Tus duelos previos con cada rival, sus mejores y peores mapas, posibles premades y ayuda para el veto.</p>
-      </div>
-      ${img('intel', 'position:absolute;left:64px;top:292px;width:1152px;height:470px;object-fit:cover;object-position:top')}`,
-  },
-  {
-    name: 'screenshot-4',
     html: `<div style="position:absolute;left:96px;top:64px">${brand()}</div>
       <div style="position:absolute;left:96px;top:250px;width:560px">
         <h1 style="font-size:80px">Solo tu <em>nick</em></h1>
-        <p class="sub" style="font-size:24px;margin-top:22px">Sin registro ni contraseñas. Escribe tu nickname de FACEIT y listo. Auto-aceptar partidas opcional.</p>
+        <p class="sub" style="font-size:24px;margin-top:22px">Sin registro ni contraseñas. Tu ELO, lo que te falta para el siguiente nivel y cómo vas hoy. Auto-aceptar partidas opcional.</p>
       </div>
-      ${img('popup', 'position:absolute;right:150px;top:110px;width:400px;height:auto')}`,
+      ${img('popup', 'position:absolute;right:150px;top:90px;width:400px;height:auto')}`,
   },
   {
-    name: 'screenshot-5',
+    name: 'screenshot-4',
     html: `<div style="position:absolute;left:64px;top:56px">${brand()}</div>
       <div style="position:absolute;left:64px;top:120px;width:1152px">
         <h1 style="font-size:64px">Tu perfil, <em>a fondo</em></h1>

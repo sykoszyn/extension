@@ -1,11 +1,12 @@
 /**
- * Simple match-room view (shown on faceit.com): the 10 players, each with
- * their LAST 10 MAPS — results as W/L squares plus WR, K/D, ADR and HS% over
- * those 10 matches. Nothing else. The full analysis stays in the dashboard.
+ * Simple match-room view: the 10 players, each with their LAST 10 MAPS —
+ * results as W/L squares plus WR, K/D, ADR and HS% over those 10 matches —
+ * and a Rival-Tracker style badge when you already met that player.
  */
 import { useEffect, useMemo } from 'react';
 import type { LobbyPlayer, LobbyTeam } from '@shared/types/analytics';
 import { formSummary } from '@shared/utils/analytics';
+import type { Encounter } from '@shared/utils/encounters';
 import { fmt, pct, ratio } from '@shared/utils/format';
 import { mapLabel } from '@shared/utils/maps';
 import { SERIES } from '../charts';
@@ -50,7 +51,38 @@ function tone(v: number | null, good: number, bad: number) {
   return v >= good ? 'text-win' : v <= bad ? 'text-loss' : 'text-fog-100';
 }
 
-function TeamTable({ team, label, accent, myId }: { team: LobbyTeam; label: string; accent: string; myId: string }) {
+/** Rival-Tracker style badge: have you met this player before? */
+function MetBadge({ e }: { e: Encounter | undefined }) {
+  if (!e || (e.rival.count === 0 && e.together === 0)) return null;
+  const tip = [
+    e.rival.count ? `Rival ${e.rival.count} ${e.rival.count === 1 ? 'vez' : 'veces'} (tú ${e.rival.wins}-${e.rival.losses})` : '',
+    e.together ? `Compañeros ${e.together} ${e.together === 1 ? 'vez' : 'veces'}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <span title={tip} className="flex shrink-0 gap-1">
+      {e.rival.count > 0 && <span className="rounded bg-blood-500/15 px-1 text-[9px] font-bold uppercase text-blood-400">{e.rival.count}× vs</span>}
+      {e.together > 0 && <span className="rounded bg-white/[0.07] px-1 text-[9px] font-bold uppercase text-fog-300">{e.together}× con</span>}
+    </span>
+  );
+}
+
+function TeamTable({
+  team,
+  label,
+  accent,
+  myId,
+  met,
+  onOpenPlayer,
+}: {
+  team: LobbyTeam;
+  label: string;
+  accent: string;
+  myId: string;
+  met: Record<string, Encounter>;
+  onOpenPlayer?: (id: string) => void;
+}) {
   const rows = team.players.map((p) => ({ p, f: formSummary(p.recent.slice(0, WINDOW)) }));
   const avg = {
     elo: mean(team.players.map((p) => p.profile?.elo ?? null)),
@@ -70,9 +102,9 @@ function TeamTable({ team, label, accent, myId }: { team: LobbyTeam; label: stri
       <table className="w-full table-fixed text-[12px] tabular-nums">
         {/* Fixed widths so both teams' columns line up exactly. */}
         <colgroup>
+          <col style={{ width: '33%' }} />
+          <col style={{ width: '8%' }} />
           <col style={{ width: '31%' }} />
-          <col style={{ width: '9%' }} />
-          <col style={{ width: '32%' }} />
           <col style={{ width: '7%' }} />
           <col style={{ width: '7%' }} />
           <col style={{ width: '7%' }} />
@@ -82,7 +114,9 @@ function TeamTable({ team, label, accent, myId }: { team: LobbyTeam; label: stri
           <tr className="text-[10px] uppercase tracking-[0.12em] text-fog-500">
             <th className="px-3 py-1.5 text-left font-semibold">Jugador</th>
             <th className="px-2 py-1.5 text-right font-semibold">ELO</th>
-            <th className="px-2 py-1.5 text-left font-semibold" title="De izquierda a derecha: del más reciente al más antiguo">Últimos 10 mapas</th>
+            <th className="px-2 py-1.5 text-left font-semibold" title="De izquierda a derecha: del más reciente al más antiguo">
+              Últimos 10 mapas
+            </th>
             <th className="px-2 py-1.5 text-right font-semibold">WR</th>
             <th className="px-2 py-1.5 text-right font-semibold">K/D</th>
             <th className="px-2 py-1.5 text-right font-semibold">ADR</th>
@@ -98,13 +132,22 @@ function TeamTable({ team, label, accent, myId }: { team: LobbyTeam; label: stri
                 <td className="px-3 py-1.5">
                   <a
                     href={p.profile?.faceitUrl ?? `https://www.faceit.com/es/players/${encodeURIComponent(name)}`}
+                    onClick={(ev) => {
+                      if (!onOpenPlayer) return;
+                      ev.preventDefault();
+                      onOpenPlayer(p.rosterId);
+                    }}
                     className="flex min-w-0 items-center gap-2 hover:text-ember-300"
                     title={`Ver perfil de ${name}`}
                   >
                     <Avatar src={p.profile?.avatar ?? p.rosterAvatar} name={name} size={24} />
                     <LevelBadge level={p.profile?.level ?? p.rosterLevel} size={20} />
-                    <span className="max-w-[120px] truncate font-semibold">{name}</span>
-                    {me && <span className="rounded bg-ember-500/20 px-1 text-[9px] font-bold uppercase text-ember-300">Tú</span>}
+                    <span className="min-w-0 truncate font-semibold">{name}</span>
+                    {me ? (
+                      <span className="rounded bg-ember-500/20 px-1 text-[9px] font-bold uppercase text-ember-300">Tú</span>
+                    ) : (
+                      <MetBadge e={met[p.rosterId]} />
+                    )}
                   </a>
                 </td>
                 <td className="px-2 py-1.5 text-right font-semibold">{fmt(p.profile?.elo)}</td>
@@ -135,8 +178,10 @@ function TeamTable({ team, label, accent, myId }: { team: LobbyTeam; label: stri
   );
 }
 
-export function SimpleLobby({ matchId, myPlayerId, onFullAnalysis }: { matchId: string; myPlayerId: string; onFullAnalysis?: () => void }) {
+export function SimpleLobby({ matchId, myPlayerId, onOpenPlayer }: { matchId: string; myPlayerId: string; onOpenPlayer?: (id: string) => void }) {
   const lobby = useRpc('lobby.analyze', { matchId });
+  // Loaded separately so the table never waits for the history scan.
+  const met = useRpc('lobby.encounters', myPlayerId ? { matchId } : null);
   const status = lobby.data?.match.status;
 
   // While the veto is running, refresh every 20 s to pick up the chosen map.
@@ -167,6 +212,7 @@ export function SimpleLobby({ matchId, myPlayerId, onFullAnalysis }: { matchId: 
     );
 
   const { match } = lobby.data;
+  const byId = met.data?.byId ?? {};
   return (
     <div className="space-y-2.5">
       <div className="flex items-center gap-3">
@@ -175,15 +221,16 @@ export function SimpleLobby({ matchId, myPlayerId, onFullAnalysis }: { matchId: 
           <div className="text-[13px] font-semibold">{match.map ? mapLabel(match.map) : 'Mapa en veto…'}</div>
           <div className="text-[11px] text-fog-500">Stats de los últimos 10 mapas de cada jugador</div>
         </div>
-        {lobby.loading && <Spinner />}
-        {onFullAnalysis && (
-          <button className="text-[12px] font-semibold text-ember-400 hover:text-ember-300" onClick={onFullAnalysis}>
-            Análisis completo ↗
-          </button>
-        )}
+        {(lobby.loading || met.loading) && <Spinner />}
       </div>
-      <TeamTable team={ordered.teams[0]} label={ordered.labels[0]} accent={SERIES.you} myId={myPlayerId} />
-      <TeamTable team={ordered.teams[1]} label={ordered.labels[1]} accent={SERIES.them} myId={myPlayerId} />
+      <TeamTable team={ordered.teams[0]} label={ordered.labels[0]} accent={SERIES.you} myId={myPlayerId} met={byId} onOpenPlayer={onOpenPlayer} />
+      <TeamTable team={ordered.teams[1]} label={ordered.labels[1]} accent={SERIES.them} myId={myPlayerId} met={byId} onOpenPlayer={onOpenPlayer} />
+      {met.data && met.data.coverage.scanned > 0 && (
+        <p className="text-[10px] text-fog-500">
+          «× vs» / «× con»: veces que jugaste contra / con ese jugador, según tus {met.data.coverage.scanned} partidas guardadas
+          {met.data.coverage.complete ? '' : ' (historial parcial)'}.
+        </p>
+      )}
     </div>
   );
 }

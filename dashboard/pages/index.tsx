@@ -10,7 +10,7 @@ import type { Settings } from '@shared/types/settings';
 import { useRpc } from '../hooks/useRpc';
 import { useFavorites } from '../hooks/useSettings';
 import { navigate } from '../hooks/useHashRoute';
-import { LobbyView } from '../components/LobbyView';
+import { SimpleLobby } from '../components/SimpleLobby';
 import { MapPerformance } from '../components/MapPerformance';
 import { MatchHistory } from '../components/MatchHistory';
 import { MapTable, PlayerHeader, PlayerOverview } from '../components/PlayerOverview';
@@ -177,7 +177,7 @@ export function LobbyPage({ arg, settings }: { arg: string | null; settings: Set
         )}
       </Card>
       {arg && MATCH_ID_RE.test(arg) ? (
-        <LobbyView key={arg} matchId={arg} myPlayerId={settings.myPlayerId} onOpenPlayer={(id) => navigate('overview', id)} />
+        <SimpleLobby key={arg} matchId={arg} myPlayerId={settings.myPlayerId} onOpenPlayer={(id) => navigate('overview', id)} />
       ) : (
         <Empty title="Ninguna sala seleccionada" />
       )}

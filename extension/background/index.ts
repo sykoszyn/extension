@@ -8,7 +8,7 @@ import { ext, getURL, notify, onMessage, openTab } from '@ext/compat/browser';
 import { clearCache, idb, pruneCache } from './db';
 import { FaceitClient } from './faceit-client';
 import { HttpError } from './rate-limiter';
-import { analyzeLobby, analyzePvp, lobbyIntelFor } from './services';
+import { analyzeLobby, analyzePvp, lobbyEncounters } from './services';
 import { ConfigError, PROXY_URL, resolveKey } from './transport';
 
 const client = new FaceitClient(getSettings);
@@ -26,7 +26,7 @@ const handlers: Handlers = {
   'match.stats': (p) => client.matchStats(p.id),
   'pvp.analyze': async (p) => analyzePvp(client, await getSettings(), p),
   'lobby.analyze': (p) => analyzeLobby(client, p.matchId, p.force),
-  'lobby.intel': async (p) => lobbyIntelFor(client, await getSettings(), p.matchId, !!p.scanOlder),
+  'lobby.encounters': async (p) => lobbyEncounters(client, await getSettings(), p.matchId),
   'api.status': async () => ({ keySource: resolveKey(await getSettings()).source, proxyAvailable: !!PROXY_URL }),
   'ui.openDashboard': async (p) => {
     await openTab(getURL(`dashboard/index.html${p.hash ? `#${p.hash.replace(/^#/, '')}` : ''}`));

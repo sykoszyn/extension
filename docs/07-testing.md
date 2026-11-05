@@ -3,7 +3,7 @@
 | Comando | Qué comprueba |
 |---|---|
 | `npm run typecheck` | TypeScript estricto en todo el proyecto (extensión, dashboard, tests) |
-| `npm test` | 67 pruebas unitarias con Vitest |
+| `npm test` | 66 pruebas unitarias con Vitest |
 | `npm run e2e` | 16 comprobaciones end-to-end con la extensión **compilada** (con un proxy de prueba) cargada en Chromium real |
 
 ## Unitarias (`tests/`)
@@ -13,13 +13,12 @@
 | `parse.test.ts` | Parsers de todos los endpoints; `null` cuando falta un dato (nunca 0 inventado) |
 | `analytics.test.ts` | Récords, rachas, K/D agregado, mapas por ventana, **PvP**: compartidas / compañeros / rivales comprobadas contra los datos de las fixtures, filtro de periodo |
 | `history-scan.test.ts` | Escaneo progresivo por bloques, cobertura parcial, «completo», refresco incremental de partidas nuevas |
-| `strength.test.ts` | Fórmula exacta del SPI, renormalización de componentes, `null` cuando no hay datos |
 | `rate-limiter.test.ts` | Concurrencia máxima, reintentos 429/5xx con `Retry-After`, sin reintento en 4xx |
 | `cache.test.ts` | Caché con TTL, agrupación de peticiones en curso, `force`, TTL según el valor (IndexedDB simulado) |
 | `faceit-url.test.ts` | Rutas de perfil y sala, entrada del buscador, rechazo de dominios ajenos |
 | `auto-accept.test.ts` | Detección del diálogo (EN/ES), ignora invitaciones a party, botones ocultos o deshabilitados y textos ajenos, clic seguro |
 | `manifest.test.ts` | Service worker en Chromium y `background.scripts` en Firefox, permisos mínimos y `open.faceit.com` como único host |
-| `intel.test.ts` | Enemy Intel: encuentros previos contra los datos de las fixtures, mapas con muestra mínima, premades (agrupación), tabla de veto |
+| `levels-encounters.test.ts` | Umbrales de nivel (contra pares nivel/ELO reales), encuentros «× vs / × con», sesión de hoy |
 | `proxy.test.ts` | Worker de Cloudflare: reenvío con la clave secreta (sin devolverla), caché, rechazo de rutas, parámetros y métodos no permitidos, rate limit, 401→502, FACEIT caído, orígenes |
 | `transport.test.ts` | Modo público sin clave → proxy y sin `Authorization`; clave propia → directo y con prioridad; sin nada → error claro |
 | `settings.test.ts` | Valores por defecto seguros y borrado de los ajustes de backend de versiones anteriores |
@@ -34,7 +33,7 @@ responde con las fixtures deterministas de `tests/fixtures/`. Comprueba:
 1. Overview con perfil y estadísticas.
 2. Player vs Player: los números de las tarjetas coinciden con los datos de las fixtures.
 3. Historial con el scoreboard desplegable y los botones VER PARTIDA.
-4. Lobby Analyzer: YOUR TEAM vs ENEMY TEAM, 10 jugadores, pestañas Intel, Fuerza y Mapas.
+4. Sala: Your team vs Enemy team, 10 jugadores con 10 resultados cada uno, insignia «× vs» correcta y sin pestañas extra.
 5. Mapas y Ajustes (las opciones avanzadas empiezan plegadas). Popup sencillo (≤ 420 px): tarjeta de perfil, confirmación en línea de Auto-aceptar (al cancelar sigue apagado) y primer uso pidiendo solo el nickname.
 6. Content script en `www.faceit.com` (respuesta simulada): panel de perfil, pestaña VS tú y sala.
 7. Auto Accept **desactivado**: avisa y **no** pulsa.

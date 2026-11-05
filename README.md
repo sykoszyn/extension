@@ -2,7 +2,7 @@
 
 **Analítica de Counter-Strike 2 para FACEIT, entera dentro del navegador**:
 perfiles, Player vs Player, historial de partidas, Lobby Analyzer de los 10
-jugadores, Enemy Intelligence, rendimiento por mapa y comparación de equipos.
+jugadores con sus últimos 10 mapas, avisos de "ya jugaste con/contra él" y rendimiento por mapa.
 Para Chrome, Edge, Brave, Opera y Firefox.
 
 **Solo tu nickname: sin registro ni cuentas.** Todo funciona dentro de la
@@ -22,13 +22,10 @@ FACEIT.
 | **Panel de perfil** | En cada perfil de faceit.com | Nivel, ELO, win rate, partidas, V/D, K/D, K/R, ADR, HS%, rachas, últimas 20 partidas, ELO observado, mapas |
 | **Player vs Player** | Pestaña *VS tú* del perfil · *Player Comparison* | Partidas compartidas ≠ enfrentamientos directos; como compañeros y como rivales, récord H2H, K/D, ADR y HS% en enfrentamientos, mapas, última vez juntos o frente a frente, historial cronológico, filtros 7 d / 30 d / 3 m / 6 m / todo, **aviso de resultados parciales** |
 | **Historial de partidas** | *Match History* | ID, fecha, mapa, resultado, score, equipos, jugadores, duración, scoreboard completo, **VER PARTIDA**, stats de cada jugador, filtros y orden |
-| **Lobby Analyzer** | Automático al entrar en una sala (durante el veto) | Los 10 jugadores: avatar, nivel, ELO, WR, K/D, ADR, HS%, partidas, forma, racha y últimos mapas, separados en YOUR TEAM vs ENEMY TEAM |
-| **Map Performance** | Sala · *Map Statistics* | Ventanas de 5/10/20 (y 50/100): partidas, WR, K/D, ADR y rachas por mapa, más tarjetas «JUGADOR — MAPA» |
-| **Enemy Intelligence** | Sala → *Intel* | Cuántas veces te has enfrentado a cada rival y tu récord contra él (desde tu historial local), sus mejores y peores mapas, quién llega más en forma, posibles premades (con la prueba) y tabla de veto por mapa |
-| **Lobby Strength** | Sala → *Fuerza* | Medias de cada equipo, diferencia de ELO, fortalezas y debilidades, y el **SPI**: índice propio con fórmula pública, que **no es una probabilidad** |
+| **Sala (Lobby)** | Automático al entrar en una sala (durante el veto) | Los 10 jugadores en dos tablas (Your team / Enemy team): nivel, ELO y sus **últimos 10 mapas** (W/L) con WR, K/D, ADR y HS%, media de cada equipo y un aviso **«N× vs» / «N× con»** si ya jugaste contra o con ese jugador |
 | **Auto Accept** | faceit.com · popup · Settings | Opcional y **desactivado por defecto**. Hay que aceptar un aviso, tiene cuenta atrás cancelable y botón *Desactivar*. Si está apagado, avisa con notificación y sonido |
 | **Buscador global** | Dashboard y popup | Nickname, URL de FACEIT o ID de partida, con sugerencias, búsquedas recientes y favoritos |
-| **Popup** | Icono de la extensión | Sencillo: tu nickname (o tu tarjeta con ELO, WR, K/D y las últimas 5 partidas), el interruptor *Auto-aceptar partidas* y el enlace a *Ver análisis completo* |
+| **Popup** | Icono de la extensión | Sencillo: tu tarjeta con ELO, WR, K/D, últimas 5 partidas, **barra de progreso al siguiente nivel** y **«Hoy»** (V/D y K/D de hoy), Auto-aceptar y *Ver análisis completo* |
 | **Análisis completo** | Página interna `dashboard/index.html` | Solo 4 secciones: Mi perfil, Comparar jugador (con favoritos y búsquedas), Historial y Ajustes (lo avanzado, plegado) |
 
 ## Inicio rápido
@@ -121,8 +118,6 @@ Servidor opcional: un Cloudflare Worker sin estado (`proxy/`).
   jugadores. El análisis empieza al abrir la sala (veto), antes de que empiece la
   partida.
 * **Clave de API**: FACEIT exige una clave para cualquier consulta. En el modo público, todos los usuarios comparten la cuota de la clave del editor (ver [docs/08](docs/08-servidor-cloudflare.md)).
-* **Premades**: FACEIT no publica los grupos; SykosTracker los marca como
-  «posibles» cuando dos jugadores coinciden en varias de sus últimas 20 partidas.
 * **Historial PvP completo**: se escanea poco a poco (100 partidas por petición).
   Mientras no se haya terminado, la interfaz avisa de que los resultados son
   parciales.

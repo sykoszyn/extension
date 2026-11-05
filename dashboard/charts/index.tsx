@@ -4,9 +4,8 @@
  *  - status (W/L) colours only for results, always paired with a text label
  *  - recessive grid, 2px lines, rounded bar ends, hover tooltip on every chart
  */
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { EloSnapshot, MatchStatLine } from '@shared/types/faceit';
-import type { TeamStrength } from '@shared/types/analytics';
 import { date, fmt, ratio } from '@shared/utils/format';
 import { mapLabel } from '@shared/utils/maps';
 
@@ -79,55 +78,6 @@ export function FormChart({ lines }: { lines: MatchStatLine[] }) {
             <Cell key={r.i} fill={r.win === null ? STATUS.none : r.win ? STATUS.win : STATUS.loss} fillOpacity={0.85} />
           ))}
         </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-/** Component-by-component SPI comparison (0–100 normalised scores). */
-export function StrengthChart({ you, them, youLabel = 'Your team', themLabel = 'Enemy team' }: { you: TeamStrength; them: TeamStrength; youLabel?: string; themLabel?: string }) {
-  const rows = you.components.map((c) => ({
-    label: c.label,
-    you: c.score,
-    them: them.components.find((x) => x.key === c.key)?.score ?? null,
-    rawYou: c.raw,
-    rawThem: them.components.find((x) => x.key === c.key)?.raw ?? null,
-  }));
-  return (
-    <ResponsiveContainer width="100%" height={rows.length * 44 + 40}>
-      <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 8 }} barGap={2} barCategoryGap={10}>
-        <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
-        <XAxis type="number" domain={[0, 100]} {...AXIS} />
-        <YAxis type="category" dataKey="label" {...AXIS} width={128} />
-        <Legend
-          content={() => (
-            <div className="flex justify-center gap-4 pt-1 text-[12px] text-fog-300">
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: SERIES.you }} />{youLabel}</span>
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: SERIES.them }} />{themLabel}</span>
-            </div>
-          )}
-        />
-        <Tooltip
-          cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-          content={({ active, payload }) => {
-            const p = active && payload?.[0]?.payload;
-            if (!p) return null;
-            const f = (v: number | null) => (v === null ? '—' : Math.abs(v) < 5 ? ratio(v) : fmt(v, 1));
-            return (
-              <Tip>
-                <div className="mb-1 font-semibold">{p.label}</div>
-                <div>
-                  <span style={{ color: SERIES.you }}>●</span> {youLabel}: {fmt(p.you, 1)} pts (valor {f(p.rawYou)})
-                </div>
-                <div>
-                  <span style={{ color: SERIES.them }}>●</span> {themLabel}: {fmt(p.them, 1)} pts (valor {f(p.rawThem)})
-                </div>
-              </Tip>
-            );
-          }}
-        />
-        <Bar name={youLabel} dataKey="you" fill={SERIES.you} radius={[0, 4, 4, 0]} maxBarSize={12} />
-        <Bar name={themLabel} dataKey="them" fill={SERIES.them} radius={[0, 4, 4, 0]} maxBarSize={12} />
       </BarChart>
     </ResponsiveContainer>
   );

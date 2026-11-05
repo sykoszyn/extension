@@ -7,7 +7,7 @@ Todo ocurre dentro de la extensión: no hay web ni cuenta propia. Lo único exte
 │                                                                     │
 │  www.faceit.com ── content.js (Shadow DOM)                          │
 │     · router por URL (perfil / sala)                                │
-│     · panel de perfil + VS tú · Lobby Analyzer + Enemy Intel        │
+│     · panel de perfil + VS tú · sala (10 jugadores, últimos 10)     │
 │     · detección de partida encontrada / Auto Accept                 │
 │                │ runtime.sendMessage (RPC tipado)                   │
 │  popup ────────┤   (perfil, ELO, WR, últimas partidas)              │
@@ -17,7 +17,7 @@ Todo ocurre dentro de la extensión: no hay web ni cuenta propia. Lo único exte
 │     · router RPC            · FaceitClient (endpoints)              │
 │     · caché memoria + IndexedDB, dedupe de peticiones               │
 │     · RateLimiter (concurrencia, espaciado, backoff, 429)           │
-│     · escaneo progresivo del historial (PvP / Intel)                │
+│     · escaneo progresivo del historial (PvP / «ya jugaste con él»)  │
 │     · registro del ELO observado                                    │
 │                                                                     │
 │  storage.local: ajustes, tu API key, favoritos, búsquedas,          │
@@ -44,18 +44,18 @@ Todo ocurre dentro de la extensión: no hay web ni cuenta propia. Lo único exte
 | `shared/constants` | URLs, TTL de caché, parámetros del rate limiter, mapas y filtros de periodo. |
 | `shared/utils/parse.ts` | JSON de FACEIT → tipos de dominio. Defensivo, con varias claves por campo. |
 | `shared/utils/analytics.ts` | Funciones puras: récords, rachas, forma, mapas por ventana, **Player vs Player**. |
-| `shared/utils/intel.ts` | **Enemy Intelligence**: encuentros previos, mejores y peores mapas, posibles premades y tabla de veto. |
-| `shared/utils/strength.ts` | **SykosTracker Performance Index**: fórmula pública y documentada. |
+| `shared/utils/encounters.ts` | Encuentros previos con cada jugador de la sala y sesión de hoy. |
+| `shared/utils/levels.ts` | Umbrales de nivel CS2 y progreso al siguiente nivel. |
 | `shared/utils/faceit-url.ts` | Reconoce las URL de perfil y de sala, y lo que se escribe en el buscador. |
 | `shared/utils/format.ts`, `maps.ts` | Presentación: números (`—` para `null`), fechas, banderas, colores por nivel y por mapa. |
 | `shared/rpc.ts` | Contrato RPC tipado entre la interfaz y el background. |
 | `shared/settings.ts` | Ajustes, favoritos y búsquedas recientes en `storage.local`. Invariante: Auto Accept no puede estar activo sin haber aceptado el aviso. |
 | `extension/compat/browser.ts` | **Capa de compatibilidad**: `browser`/`chrome`, mensajes asíncronos, notificaciones (Firefox ignora `requireInteraction`), `storage.session`. |
-| `extension/background/` | `index.ts` (router), `faceit-client.ts` (endpoints + TTL), `transport.ts` (elige proxy o clave propia, lista de rutas permitidas), `rate-limiter.ts`, `db.ts` (IndexedDB + caché), `history-scan.ts`, `services.ts` (PvP, lobby, Enemy Intel). |
+| `extension/background/` | `index.ts` (router), `faceit-client.ts` (endpoints + TTL), `transport.ts` (elige proxy o clave propia, lista de rutas permitidas), `rate-limiter.ts`, `db.ts` (IndexedDB + caché), `history-scan.ts`, `services.ts` (PvP, sala, encuentros). |
 | `extension/content/` | `index.tsx` (montaje en Shadow DOM, router SPA, paneles), `auto-accept.ts` (detección conservadora y clic seguro), `AcceptOverlay.tsx`. |
 | `extension/popup/` | Popup: tu perfil, buscador, accesos directos e interruptor de Auto Accept. |
 | `extension/manifest/build-manifest.mjs` | Manifest por navegador. |
-| `dashboard/components` | Sistema de diseño (`ui.tsx`) y componentes de cada función: `PlayerOverview`, `PvpPanel`, `MatchHistory`, `LobbyView`, `EnemyIntel`, `MapPerformance`, `PlayerSearch`. Los usan el dashboard y el content script. |
+| `dashboard/components` | Sistema de diseño (`ui.tsx`) y componentes de cada función: `PlayerOverview`, `PvpPanel`, `MatchHistory`, `SimpleLobby`, `LevelBar`, `MapPerformance`, `PlayerSearch`. Los usan el dashboard y el content script. |
 | `dashboard/charts` | Envoltorios de Recharts con la especificación visual (paleta validada para daltonismo y fondo oscuro). |
 | `dashboard/pages`, `hooks` | Páginas del dashboard, enrutado por hash, `useRpc`, `useSettings`, `useFavorites`. |
 | `proxy/` | Cloudflare Worker: lista de rutas y parámetros permitidos, secreto `FACEIT_API_KEY`, rate limit por IP, caché. Sin estado. |
@@ -73,7 +73,7 @@ Todo ocurre dentro de la extensión: no hay web ni cuenta propia. Lo único exte
 | Sala en curso | 20 s |
 | Sala terminada / scoreboard | 30 días |
 | Búsqueda | 1 h |
-| Historial descubierto (PvP/Intel) | Permanente, solo se añaden partidas nuevas |
+| Historial descubierto (PvP / encuentros) | Permanente, solo se añaden partidas nuevas |
 
 * Si llegan N peticiones simultáneas con la misma clave, se hace **una sola**
   llamada de red (`cached()` agrupa las que están en curso).

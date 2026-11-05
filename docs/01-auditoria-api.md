@@ -69,12 +69,13 @@ encontrar para todas las claves. En lugar de dar por buena una cifra concreta:
 | Rendimiento por mapa (últimas 5/10/20/50/100) | ✅ | Calculado sobre `/games/cs2/stats` |
 | Rachas por mapa | ✅ (calculado) | Sobre la ventana elegida; se indica la ventana |
 | Partidas compartidas / compañero / rival | ✅ | Rosters de `/history` |
-| **Enemy Intelligence** (encuentros previos, mejores y peores mapas, posibles premades, veto) | ✅ (derivado) | Historial local del usuario + lifetime por mapa + IDs de las últimas 20 partidas de cada jugador. «Premade» se presenta como inferencia, con la prueba en la que se basa |
+| Encuentros previos en la sala («N× vs / N× con») | ✅ (derivado) | Historial local del usuario (`/players/{id}/history`, rosters) |
+| Progreso al siguiente nivel | ✅ | ELO actual + umbrales CS2 de FACEIT (verificados con datos reales) |
 | K/D / ADR en enfrentamientos directos | ✅ (progresivo) | `/matches/{id}/stats` de cada partida compartida, con límite por consulta y caché permanente |
 | Mapa de cada partida del historial | ✅ (progresivo) | De `/games/cs2/stats` (últimas 100) o del scoreboard al abrirla |
 | Banderas | ✅ | Campo `country` (ISO-2) → emoji. Sin imágenes de terceros |
 | Iconos de mapas | ⚠️ | No usamos arte de Valve/FACEIT: insignias tipográficas propias con color por mapa |
-| Probabilidad de victoria | 🚫 (deliberado) | No se calcula. El **SPI** es un índice propio con fórmula pública y se avisa de que **no es una probabilidad** |
+| Probabilidad de victoria / ELO estimado por partida | 🚫 (deliberado) | No se calcula: dependería de datos no oficiales o fórmulas opacas |
 | Jugadores del lobby antes de empezar | ✅ | `/matches/{id}` está disponible desde la sala (veto). En la **cola de búsqueda** FACEIT todavía no ha asignado partida: no existe ningún dato de lobby que analizar |
 
 ## 4. Player vs Player: estrategia para el historial completo

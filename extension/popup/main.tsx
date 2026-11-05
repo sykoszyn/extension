@@ -16,6 +16,8 @@ import { useRpc } from '@dash/hooks/useRpc';
 import { useSettings } from '@dash/hooks/useSettings';
 import type { Settings } from '@shared/types/settings';
 import { fmt, pct, ratio } from '@shared/utils/format';
+import { todaySession } from '@shared/utils/encounters';
+import { LevelBar } from '@dash/components/LevelBar';
 import '@dash/styles.css';
 
 const open = (hash: string) => openTab(getURL(`dashboard/index.html#${hash}`)).then(() => window.close());
@@ -23,10 +25,12 @@ const open = (hash: string) => openTab(getURL(`dashboard/index.html#${hash}`)).t
 function ProfileCard({ id, onChange }: { id: string; onChange: () => void }) {
   const p = useRpc('player.resolve', { query: id });
   const life = useRpc('player.lifetime', { id });
-  const recent = useRpc('player.recent', { id, limit: 5 });
+  // 20 = same cached request as the profile panel; the chips show the last 5.
+  const recent = useRpc('player.recent', { id, limit: 20 });
   const err = p.error ?? life.error;
   if (err) return <ErrorBox error={err} onRetry={() => p.reload()} />;
   if (!p.data) return <Skeleton className="h-[104px]" />;
+  const today = todaySession(recent.data ?? []);
   return (
     <div className="st-card st-glow overflow-hidden p-3">
       <div className="flex items-center gap-3">
@@ -51,11 +55,22 @@ function ProfileCard({ id, onChange }: { id: string; onChange: () => void }) {
           K/D <b className="text-fog-100">{ratio(life.data?.kd)}</b>
         </span>
         <span className="flex gap-0.5" title="Últimas 5 partidas">
-          {(recent.data ?? []).map((l) => (
+          {(recent.data ?? []).slice(0, 5).map((l) => (
             <ResultChip key={l.matchId} win={l.win} />
           ))}
         </span>
       </div>
+      <LevelBar elo={p.data.elo} className="mt-2.5" />
+      {today.matches > 0 && (
+        <div className="mt-2 flex items-center justify-between rounded-md bg-white/[0.03] px-2 py-1.5 text-[12px]">
+          <span className="text-fog-400">Hoy</span>
+          <span>
+            <b className="text-win">{today.wins}V</b> <span className="text-fog-500">·</span> <b className="text-loss">{today.losses}D</b>
+            <span className="text-fog-500"> · K/D </span>
+            <b className="text-fog-100">{ratio(today.kd)}</b>
+          </span>
+        </div>
+      )}
     </div>
   );
 }

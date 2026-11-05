@@ -70,4 +70,4 @@ consulta [05-publicacion.md](05-publicacion.md).
    *Ajustes → Opciones avanzadas*, y solo hacen falta si la versión no tiene servidor.
 5. En faceit.com, el perfil de cualquier jugador muestra el panel con
    *Estadísticas* y *VS tú*. Al entrar en una sala (`/cs2/room/…`), el Lobby
-   Analyzer carga a los 10 jugadores con sus pestañas *Intel*, *Fuerza* y *Mapas*.
+   Analyzer muestra a los 10 jugadores con sus últimos 10 mapas y si ya jugaste con o contra ellos.

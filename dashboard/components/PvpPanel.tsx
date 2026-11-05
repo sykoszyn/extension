@@ -189,7 +189,7 @@ export function PvpPanel({ meId, otherId, compact }: { meId: string; otherId: st
                 </Card>
               )}
 
-              <div className={cx('grid gap-3', !compact && 'lg:grid-cols-[1fr_1.6fr]')}>
+              <div className={cx('grid grid-cols-[minmax(0,1fr)] gap-3', !compact && 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]')}>
                 <Card title="Mapas">
                   {r.maps.length ? (
                     <ul className="space-y-2">

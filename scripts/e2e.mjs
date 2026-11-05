@@ -136,27 +136,19 @@ try {
     await shot('03-history');
   });
 
-  await step('Lobby Analyzer: YOUR TEAM vs ENEMY TEAM + strength', async () => {
+  await step('Room: 10 players, last 10 maps, "already met" badges, no extra tabs', async () => {
     await dash(`lobby/${LIVE_MATCH_ID}`);
-    await page.getByText('YOUR TEAM').first().waitFor({ timeout: 20000 });
-    assert.ok(await page.getByText('ENEMY TEAM').first().isVisible());
-    assert.equal(await page.locator('tbody tr').count(), 10);
-    await shot('04-lobby-teams');
-    await page.getByRole('tab', { name: 'Fuerza' }).click();
-    await page.getByText('Lobby Strength Analyzer').waitFor();
-    await shot('05-lobby-strength');
-    await page.getByRole('tab', { name: 'Mapas' }).click();
-    await page.getByText('Map Performance Analyzer').waitFor();
-    await shot('06-lobby-maps');
-  });
-
-  await step('Lobby Enemy Intelligence', async () => {
-    await dash(`lobby/${LIVE_MATCH_ID}`);
-    await page.getByRole('tab', { name: 'Intel' }).click({ timeout: 20000 });
-    await page.getByText('ENEMY TEAM · Enemy Intelligence').waitFor({ timeout: 20000 });
-    await page.getByText('Posibles premades').waitFor();
-    assert.ok(await page.getByText('Contra ti:').first().isVisible());
-    await shot('07b-lobby-intel');
+    await page.getByText('Your team').first().waitFor({ timeout: 20000 });
+    assert.ok(await page.getByText('Enemy team').first().isVisible());
+    assert.equal(await page.locator('main tbody tr').count(), 10);
+    // each row: 10 result squares
+    assert.equal(await page.locator('main tbody tr').first().locator('[aria-label^="Últimos"] > span').count(), 10);
+    // Player123 is a rival in every 8th fixture match → "N× vs" badge
+    const rivals = MATCHES.filter((_, i) => i % 8 === 0).length;
+    await page.getByText(`${rivals}× vs`).first().waitFor({ timeout: 20000 });
+    // the removed analysis tabs must be gone
+    for (const t of ['Intel', 'Fuerza', 'Mapas']) assert.equal(await page.getByRole('tab', { name: t }).count(), 0, `${t} tab still shown`);
+    await shot('04-lobby');
   });
 
   await step('Map statistics page', async () => {
@@ -182,7 +174,7 @@ try {
     await pop.getByText('Cambiar nickname').waitFor({ timeout: 10000 });
     await pop.getByText('ELO', { exact: true }).waitFor();
     const h = await pop.evaluate(() => Math.round(document.getElementById('root').getBoundingClientRect().height));
-    assert.ok(h <= 420, `popup should stay compact (${h}px)`);
+    assert.ok(h <= 480, `popup should stay compact (${h}px)`);
     const cfg = JSON.parse(await readFile(path.join(root, 'sykos.config.json'), 'utf8'));
     if (cfg.twitter) {
       const tw = pop.locator(`a[href="${cfg.twitter}"]`);

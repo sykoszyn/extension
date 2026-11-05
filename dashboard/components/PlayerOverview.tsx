@@ -5,6 +5,7 @@ import { date, fmt, pct, ratio, relative } from '@shared/utils/format';
 import { mapLabel } from '@shared/utils/maps';
 import { EloChart, FormChart } from '../charts';
 import { useRpc } from '../hooks/useRpc';
+import { LevelBar } from './LevelBar';
 import { Avatar, Card, Empty, ErrorBox, Flag, FormStrip, LevelBadge, MapBadge, Notice, Skeleton, SkeletonGrid, Source, StatTile, cx } from './ui';
 
 export function PlayerHeader({ profile, actions, compact }: { profile: PlayerProfile; actions?: ReactNode; compact?: boolean }) {
@@ -35,6 +36,7 @@ export function PlayerHeader({ profile, actions, compact }: { profile: PlayerPro
         </div>
         {actions && <div className="flex w-full flex-wrap gap-2 sm:w-auto">{actions}</div>}
       </div>
+      <LevelBar elo={profile.elo} className="relative mt-3" />
     </div>
   );
 }

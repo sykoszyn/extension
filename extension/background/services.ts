@@ -7,7 +7,7 @@ import type { LobbyPlayer, LobbyTeam, PvpResult } from '@shared/types/analytics'
 import type { Faction, MatchStats } from '@shared/types/faceit';
 import type { Settings } from '@shared/types/settings';
 import { computePvp, findSharedMatches } from '@shared/utils/analytics';
-import { lobbyIntel } from '@shared/utils/intel';
+import { encountersFor } from '@shared/utils/encounters';
 import { idb, peekCached } from './db';
 import type { FaceitClient } from './faceit-client';
 import { coverageOf, EMPTY_HISTORY, scanHistory, type StoredHistory } from './history-scan';
@@ -101,13 +101,16 @@ export async function analyzeLobby(client: FaceitClient, matchId: string, force 
 }
 
 /**
- * Enemy Intelligence for a lobby. Uses the user's locally stored history
- * (scanning further back only when asked) plus the cached lobby data —
- * no extra requests per player.
+ * Past encounters with each player of a lobby, from the user's locally stored
+ * history (scanned incrementally; no extra requests per player).
  */
-export async function lobbyIntelFor(client: FaceitClient, settings: Settings, matchId: string, scanOlder: boolean) {
-  const { match, teams } = await analyzeLobby(client, matchId);
+export async function lobbyEncounters(client: FaceitClient, settings: Settings, matchId: string) {
   const meId = settings.myPlayerId;
-  const history = meId ? await scanPlayerHistory(client, meId, settings, scanOlder) : EMPTY_HISTORY;
-  return lobbyIntel({ meId, teams, history: history.matches, mapPool: match.mapPool, coverage: coverageOf(history) });
+  const match = await client.match(matchId);
+  const ids = [...match.teams.faction1.players, ...match.teams.faction2.players].map((p) => p.id);
+  if (!meId) return { byId: {}, coverage: coverageOf(EMPTY_HISTORY) };
+  const history = await scanPlayerHistory(client, meId, settings, false);
+  // Ignore the room itself (it is in the history once finished).
+  const past = history.matches.filter((m) => m.matchId !== matchId);
+  return { byId: encountersFor(past, meId, ids), coverage: coverageOf(history) };
 }

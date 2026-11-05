@@ -3,7 +3,8 @@
  * and the background worker. All network I/O happens in the background so
  * caching and rate limiting are global to the browser profile.
  */
-import type { LobbyIntel, LobbyTeam, PvpResult } from './types/analytics';
+import type { HistoryCoverage, LobbyTeam, PvpResult } from './types/analytics';
+import type { Encounter } from './utils/encounters';
 import type {
   EloSnapshot,
   HistoryMatch,
@@ -35,7 +36,7 @@ export interface RpcMap {
   'cache.clear': { req: Record<string, never>; res: true };
   'api.test': { req: Record<string, never>; res: { ok: boolean; message: string } };
   'api.status': { req: Record<string, never>; res: { keySource: 'user' | 'proxy' | 'none'; proxyAvailable: boolean } };
-  'lobby.intel': { req: { matchId: string; scanOlder?: boolean }; res: LobbyIntel };
+  'lobby.encounters': { req: { matchId: string }; res: { byId: Record<string, Encounter>; coverage: HistoryCoverage } };
 }
 
 export type RpcMethod = keyof RpcMap;
