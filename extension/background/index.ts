@@ -35,11 +35,12 @@ const handlers: Handlers = {
   },
   'notify.matchFound': async (p) => {
     const s = await getSettings();
-    if (s.autoAccept.notify) {
+    // Auto-accepted matches are silent by design; only manual mode notifies.
+    if (s.autoAccept.notify && !p.accepted) {
       await notify(`match-${Date.now()}`, {
-        title: `SykosTracker · ${p.accepted ? t('aa.accepted') : t('aa.foundManual')}`,
-        message: p.accepted ? t('notif.acceptedBody') : t('notif.foundBody'),
-        requireInteraction: !p.accepted,
+        title: `SykosTracker · ${t('aa.foundManual')}`,
+        message: t('notif.foundBody'),
+        requireInteraction: true,
       });
     }
     return true;

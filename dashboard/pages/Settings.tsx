@@ -66,20 +66,6 @@ export function SettingsPage({ settings, update }: { settings: Settings; update:
 
       <Card title={t('set.matches')}>
         <AutoAcceptSwitch settings={settings} update={update} />
-        {aa.enabled && (
-          <div className="mt-3 flex items-center justify-between gap-3 text-[13px]">
-            <span className="text-fog-400">{t('set.countdown', { n: aa.delaySeconds })}</span>
-            <input
-              type="range"
-              min={0}
-              max={15}
-              value={aa.delaySeconds}
-              onChange={(e) => update({ autoAccept: { ...aa, delaySeconds: Number(e.target.value) } })}
-              className="w-40 accent-[#ff6a1f]"
-              aria-label={t('set.countdown', { n: aa.delaySeconds })}
-            />
-          </div>
-        )}
         <div className="mt-4 border-t border-white/[0.05] pt-3">
           <Row title={t('set.notify')} desc={t('set.notifyDesc')}>
             <Toggle label={t('set.notify')} checked={aa.notify || aa.sound} onChange={(v) => update({ autoAccept: { ...aa, notify: v, sound: v } })} />

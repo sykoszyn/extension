@@ -44,6 +44,11 @@ describe('endpoint parsers', () => {
     expect(l.maps.length).toBeGreaterThan(0);
     expect(l.maps[0].map.startsWith('de_')).toBe(true);
   });
+  it('lifetime maps: only competitive maps (no aim/AWP/1v1 maps)', () => {
+    const seg = (label: string, mode = '5v5') => ({ type: 'Map', mode, label, stats: { Matches: '10', Wins: '5' } });
+    const l = parseLifetime({ player_id: 'x', lifetime: {}, segments: [seg('Mirage'), seg('Aim map classic'), seg('Awp arena'), seg('1v1 aim map', '1v1'), seg('Dust2')] });
+    expect(l.maps.map((m) => m.map).sort()).toEqual(['de_dust2', 'de_mirage']);
+  });
   it('empty lifetime yields nulls', () => {
     const l = parseLifetime({ player_id: 'x' });
     expect(l.matches).toBeNull();

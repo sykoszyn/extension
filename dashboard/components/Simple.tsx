@@ -83,7 +83,7 @@ export function AutoAcceptSwitch({ settings, update }: { settings: Settings; upd
             </svg>
             {t('aa.title')}
           </div>
-          <div className="text-[12px] text-fog-500">{aa.enabled ? t('aa.onSub', { n: aa.delaySeconds }) : t('aa.offSub')}</div>
+          <div className="text-[12px] text-fog-500">{aa.enabled ? t('aa.onSub') : t('aa.offSub')}</div>
         </div>
         <Toggle
           label={t('aa.title')}

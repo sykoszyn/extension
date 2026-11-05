@@ -31,3 +31,8 @@ export function mapShort(key: string | null | undefined): string {
 export function mapHue(key: string | null | undefined): number {
   return (key ? MAP_META[key]?.hue : undefined) ?? 20;
 }
+
+/** Competitive 5v5 maps (the CS2 pool). Aim/AWP/1v1/2v2 community maps are not. */
+export function isCompetitiveMap(key: string | null | undefined): boolean {
+  return !!key && key in MAP_META;
+}

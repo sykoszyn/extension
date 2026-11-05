@@ -19,6 +19,7 @@ import type {
 } from '../types/analytics';
 import type { Faction, HistoryMatch, MatchStatLine, MatchStats } from '../types/faceit';
 import { round2 } from './parse';
+import { isCompetitiveMap } from './maps';
 
 const mean = (xs: (number | null | undefined)[]): number | null => {
   const v = xs.filter((x): x is number => typeof x === 'number' && Number.isFinite(x));
@@ -98,7 +99,7 @@ export function formSummary(lines: MatchStatLine[]): FormSummary {
 export function mapWindowStats(lines: MatchStatLine[]): MapWindowStats[] {
   const byMap = new Map<string, MatchStatLine[]>();
   for (const l of lines) {
-    if (!l.map) continue;
+    if (!l.map || !isCompetitiveMap(l.map)) continue;
     const arr = byMap.get(l.map) ?? [];
     arr.push(l);
     byMap.set(l.map, arr);

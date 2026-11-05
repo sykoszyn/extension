@@ -98,8 +98,8 @@ encontrar para todas las claves. En lugar de dar por buena una cifra concreta:
 * No existe una API pública para aceptar partidas. La única vía legítima es la
   propia interfaz de FACEIT.
 * SykosTracker **solo** busca el botón «Aceptar» visible del diálogo de partida
-  encontrada y, si el usuario lo activó y aceptó el aviso, llama a `click()` tras
-  una cuenta atrás que se puede cancelar. No intercepta, crea ni modifica
+  encontrada y, si el usuario lo activó y aceptó el aviso, llama a `click()` una
+  sola vez, sin mostrar nada. No intercepta, crea ni modifica
   peticiones, ni toca tokens.
 * La automatización de la interfaz puede ir contra las condiciones de FACEIT. Por
   eso: viene **desactivado**, hay que **aceptar un aviso** antes de poder activarlo,

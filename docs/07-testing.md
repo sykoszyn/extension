@@ -36,12 +36,11 @@ responde con las fixtures deterministas de `tests/fixtures/`. Comprueba:
 3. Historial con el scoreboard desplegable y los botones VER PARTIDA.
 4. Sala: Your team vs Enemy team, 10 jugadores con 10 resultados cada uno, insignia «× vs» correcta y sin pestañas extra.
 5. Mapas y Ajustes (las opciones avanzadas empiezan plegadas). Popup sencillo (≤ 420 px): tarjeta de perfil, confirmación en línea de Auto-aceptar (al cancelar sigue apagado) y primer uso pidiendo solo el nickname.
-6. Content script en `www.faceit.com` (respuesta simulada): panel de perfil, pestaña VS tú y sala.
+6. Content script en `www.faceit.com` (respuesta simulada): panel de perfil, pestaña VS vos y sala.
 7. Auto Accept **desactivado**: avisa y **no** pulsa.
-8. Auto Accept **activado**: cuenta atrás y un único clic en el botón oficial.
-9. Auto Accept **cancelado**: no pulsa.
-10. Red en modo público: todas las llamadas van al proxy, **sin** ninguna clave, y ninguna sale hacia otro dominio.
-11. Clave propia: la prueba de conexión va directa a `open.faceit.com` con `Bearer <clave>`.
+8. Auto Accept **activado**: un único clic en el botón oficial, sin ningún cartel.
+9. Red en modo público: todas las llamadas van al proxy, **sin** ninguna clave, y ninguna sale hacia otro dominio.
+10. Clave propia: la prueba de conexión va directa a `open.faceit.com` con `Bearer <clave>`.
 
 Además, el Worker se ha ejecutado en el runtime local de Cloudflare (`wrangler dev`): `/health`, rechazo de rutas, parámetros y métodos, y 502 cuando FACEIT no responde.
 

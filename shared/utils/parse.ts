@@ -21,7 +21,7 @@ import type {
   TeamRoster,
 } from '../types/faceit';
 import { GAME_ID } from '../constants';
-import { normalizeMap } from './maps';
+import { isCompetitiveMap, normalizeMap } from './maps';
 
 type Raw = Record<string, any>;
 
@@ -119,7 +119,7 @@ export function parseLifetime(raw: Raw, now = Date.now()): LifetimeStats {
   const maps = new Map<string, MapSegment>();
   for (const seg of Array.isArray(raw?.segments) ? raw.segments : []) {
     const p = parseSegment(seg);
-    if (!p) continue;
+    if (!p || !isCompetitiveMap(p.map)) continue; // only competitive maps (no aim/AWP/1v1 maps)
     const mode = String(seg.mode ?? '5v5');
     if (mode !== '5v5' && maps.has(p.map)) continue;
     if (mode === '5v5' || !maps.has(p.map)) maps.set(p.map, p);

@@ -264,29 +264,21 @@ try {
     await fp.close();
   });
 
-  await step('Auto Accept ON: countdown then clicks official button once', async () => {
+  await step('Auto Accept ON: clicks the official button once, silently (no toast)', async () => {
     await sw.evaluate(async () => {
       const s = (await chrome.storage.local.get('sykos.settings'))['sykos.settings'];
-      await chrome.storage.local.set({ 'sykos.settings': { ...s, autoAccept: { enabled: true, acknowledged: true, delaySeconds: 2, notify: false, sound: false } } });
+      await chrome.storage.local.set({ 'sykos.settings': { ...s, autoAccept: { enabled: true, acknowledged: true, delaySeconds: 3, notify: true, sound: true } } });
     });
     const fp = await ctx.newPage();
     await fp.goto('https://www.faceit.com/en/matchmaking');
-    await fp.getByText('Partida encontrada').waitFor({ timeout: 10000 });
-    await fp.screenshot({ path: path.join(out, '13-auto-accept-countdown.png') });
-    assert.equal(await fp.evaluate(() => window.__accepted ?? 0), 0);
-    await fp.getByText('Partida aceptada por Auto Accept').waitFor({ timeout: 6000 });
-    assert.equal(await fp.evaluate(() => window.__accepted ?? 0), 1);
+    await fp.waitForFunction(() => (window.__accepted ?? 0) === 1, null, { timeout: 10000 });
+    await fp.waitForTimeout(1500);
+    assert.equal(await fp.evaluate(() => window.__accepted), 1, 'must click exactly once');
+    const toast = await fp.evaluate(() => document.getElementById('sykostracker-root')?.shadowRoot?.querySelector('[role="status"]') ? 1 : 0);
+    assert.equal(toast, 0, 'no SykosTracker pop-up when auto-accepting');
     await fp.close();
   });
 
-  await step('Auto Accept cancel: no click', async () => {
-    const fp = await ctx.newPage();
-    await fp.goto('https://www.faceit.com/en/matchmaking');
-    await fp.getByRole('button', { name: 'Cancelar' }).click({ timeout: 10000 });
-    await fp.waitForTimeout(3000);
-    assert.equal(await fp.evaluate(() => window.__accepted ?? 0), 0);
-    await fp.close();
-  });
   await step('Network (no key): everything via the SykosTracker proxy, no key sent, no other hosts', async () => {
     assert.ok(apiCalls.length > 10, `expected API calls, got ${apiCalls.length}`);
     assert.ok(apiCalls.every((c) => c.host === new URL(PROXY).host), 'a call bypassed the proxy');
