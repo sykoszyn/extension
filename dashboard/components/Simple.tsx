@@ -126,6 +126,7 @@ export function LanguageSelect({ settings, update, className }: { settings: Sett
       value={settings.language}
       onChange={(e) => update({ language: e.target.value as LangSetting })}
       aria-label={t('lang.label')}
+      data-testid="lang-select"
     >
       <option value="auto">{t('lang.auto')}</option>
       {LANGS.map((l) => (

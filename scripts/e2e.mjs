@@ -221,9 +221,13 @@ try {
       if (lang === 'ru') await pop.screenshot({ path: path.join(out, '09d-popup-ru.png') });
     }
     // live switch without reload: the language picker in the popup
-    await pop.locator('select[aria-label="Language"]').selectOption('es');
-    await pop.getByText('Ver análisis completo').waitFor({ timeout: 10000 });
-    await pop.close();
+    try {
+      await pop.locator('[data-testid="lang-select"]').selectOption('es');
+      await pop.getByText('Ver análisis completo').waitFor({ timeout: 10000 });
+    } finally {
+      await setLang('es'); // the remaining checks are written in Spanish
+      await pop.close();
+    }
   });
 
   // ── In-page integration on (stubbed) faceit.com ──

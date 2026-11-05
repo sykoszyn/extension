@@ -92,7 +92,10 @@ function Popup() {
             Sykos<span className="text-ember-500">Tracker</span>
           </span>
         </div>
-        <p className="mt-0.5 text-[12px] text-fog-500">{t('popup.tagline')}</p>
+        <div className="mt-1 flex items-start gap-2">
+          <p className="min-w-0 flex-1 text-[12px] text-fog-500">{t('popup.tagline')}</p>
+          <LanguageSelect settings={settings} update={up} className="!w-[92px] shrink-0 !px-1.5 !py-0.5 !text-[11px]" />
+        </div>
       </header>
 
       {!ready ? (
@@ -111,12 +114,9 @@ function Popup() {
         <button className="font-semibold text-ember-400 hover:text-ember-300" onClick={() => open('overview')}>
           {t('popup.full')} →
         </button>
-        <span className="flex items-center gap-2">
-          <LanguageSelect settings={settings} update={up} />
-          <button className="text-fog-400 hover:text-fog-100" onClick={() => open('settings')}>
-            {t('nav.settings')}
-          </button>
-        </span>
+        <button className="text-fog-400 hover:text-fog-100" onClick={() => open('settings')}>
+          {t('nav.settings')}
+        </button>
       </footer>
       <CreatorLinks compact />
     </div>
