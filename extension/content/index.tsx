@@ -15,7 +15,7 @@ import { contextValid, isContextInvalidated, storageGet, storageSet } from '@ext
 import { LogoMark } from '@dash/components/Logo';
 import { PlayerOverview } from '@dash/components/PlayerOverview';
 import { PvpPanel } from '@dash/components/PvpPanel';
-import { LobbyView } from '@dash/components/LobbyView';
+import { SimpleLobby } from '@dash/components/SimpleLobby';
 import { Notice, Segmented, cx } from '@dash/components/ui';
 import { useRpc } from '@dash/hooks/useRpc';
 import { useSettings } from '@dash/hooks/useSettings';
@@ -39,7 +39,7 @@ function useFaceitRoute(): FaceitRoute {
 
 const openDash = (hash: string) => void rpc('ui.openDashboard', { hash }).catch(() => undefined);
 
-function Dock({ wide, title, children }: { wide?: boolean; title: string; children: React.ReactNode }) {
+function Dock({ wide, title, children, link }: { wide?: boolean; title: string; children: React.ReactNode; link?: { label: string; hash: string } }) {
   const [open, setOpen] = useState<boolean | null>(null);
   useEffect(() => {
     storageGet<boolean>('sykos.dockOpen', true).then(setOpen);
@@ -63,8 +63,8 @@ function Dock({ wide, title, children }: { wide?: boolean; title: string; childr
   return (
     <aside
       className={cx(
-        'st-scroll fixed bottom-3 right-3 top-[72px] z-[2147483646] flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-ink-950/[0.97] shadow-[0_24px_80px_-20px_rgba(0,0,0,.9)] backdrop-blur animate-rise',
-        wide ? 'w-[min(1040px,calc(100vw-24px))]' : 'w-[min(540px,calc(100vw-24px))]',
+        'st-scroll fixed right-3 top-[72px] z-[2147483646] flex max-h-[calc(100vh-84px)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-ink-950/[0.97] shadow-[0_24px_80px_-20px_rgba(0,0,0,.9)] backdrop-blur animate-rise',
+        wide ? 'w-[min(760px,calc(100vw-24px))]' : 'w-[min(540px,calc(100vw-24px))]',
       )}
       aria-label="SykosTracker"
     >
@@ -74,14 +74,14 @@ function Dock({ wide, title, children }: { wide?: boolean; title: string; childr
           Sykos<span className="text-ember-500">Tracker</span>
         </span>
         <span className="st-label ml-1">· {title}</span>
-        <button className="ml-auto text-[12px] text-fog-400 hover:text-fog-100" onClick={() => openDash('overview')}>
-          Dashboard ↗
+        <button className="ml-auto text-[12px] font-semibold text-ember-400 hover:text-ember-300" onClick={() => openDash(link?.hash ?? 'overview')}>
+          {link?.label ?? 'Análisis completo'} ↗
         </button>
         <button className="ml-2 grid h-7 w-7 place-items-center rounded-md text-fog-400 hover:bg-white/5 hover:text-fog-100" onClick={() => set(false)} aria-label="Minimizar panel">
           ✕
         </button>
       </header>
-      <div className="st-scroll flex-1 overflow-y-auto p-3">{children}</div>
+      <div className="st-scroll min-h-0 flex-1 overflow-y-auto p-3">{children}</div>
     </aside>
   );
 }
@@ -139,8 +139,8 @@ function ContentApp() {
         </Dock>
       )}
       {route.kind === 'room' && settings.injectLobbyPanel && (
-        <Dock wide title="Lobby Analyzer">
-          <LobbyView key={route.matchId} matchId={route.matchId} myPlayerId={settings.myPlayerId} onOpenPlayer={(id) => openDash(`overview/${encodeURIComponent(id)}`)} />
+        <Dock wide title="Sala" link={{ label: 'Análisis completo', hash: `lobby/${encodeURIComponent(route.matchId)}` }}>
+          <SimpleLobby key={route.matchId} matchId={route.matchId} myPlayerId={settings.myPlayerId} />
         </Dock>
       )}
     </>

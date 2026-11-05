@@ -73,6 +73,7 @@ const grab = async (name, locator) => (raw[name] = (await locator.screenshot({ a
   await p.getByText('YOUR TEAM').first().waitFor({ timeout: 30000 });
   await settle(p);
   await grab('room', p.locator('aside[aria-label="SykosTracker"]'));
+  await p.locator('aside[aria-label="SykosTracker"]').screenshot({ path: path.join(out, 'panel-sala.png'), animations: 'disabled' });
   await p.close();
 }
 {
