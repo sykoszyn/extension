@@ -92,7 +92,7 @@ if (REAL) {
   );
   console.log(`› real data: ${subject.meNick} · room ${subject.roomId} · vs ${subject.otherNick}`);
 }
-await sw.evaluate(([id, nick]) => chrome.storage.local.set({ 'sykos.settings': { myNickname: nick, myPlayerId: id } }), [subject.meId, subject.meNick]);
+await sw.evaluate(([id, nick, lang]) => chrome.storage.local.set({ 'sykos.settings': { language: lang, myNickname: nick, myPlayerId: id } }), [subject.meId, subject.meNick, process.env.STORE_LANG ?? 'es']);
 for (const p of ctx.pages()) if (p.url().includes('dashboard')) await p.close();
 
 const settle = (p, ms = 1800) => p.waitForTimeout(ms); // let rise/chart animations finish
@@ -113,7 +113,7 @@ const grab = async (name, locator) => (raw[name] = (await locator.screenshot({ a
 {
   const p = await ctx.newPage();
   await p.goto(`https://www.faceit.com/en/players/${encodeURIComponent(subject.otherNick)}`);
-  await p.getByRole('tab', { name: 'VS tú' }).click({ timeout: 60000 });
+  await p.getByRole('tab', { name: 'VS vos' }).click({ timeout: 60000 });
   await p.getByText('Partidas compartidas').waitFor({ timeout: 90000 });
   await settle(p, 2500);
   await grab('pvp', p.locator('aside[aria-label="SykosTracker"]'));

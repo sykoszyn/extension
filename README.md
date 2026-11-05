@@ -50,6 +50,18 @@ descomprimida.
 > Cloudflare (`proxy/`). Si no configuras ningún servidor, cada usuario tendrá
 > que pegar su propia clave. Más detalles en [docs/04](docs/04-clave-faceit-api.md).
 
+## Idiomas
+
+La interfaz está en **inglés, español (rioplatense, con «vos»), portugués (BR),
+ruso, ucraniano, alemán, francés, polaco y turco**: los más comunes entre
+jugadores de CS2 en FACEIT. Por defecto sigue el idioma del navegador; se puede
+cambiar en el popup o en *Ajustes → Idioma*. El nombre y la descripción de la
+extensión también están traducidos (`extension/_locales/`) para la tienda.
+
+Los textos están en `shared/i18n/locales/<idioma>.ts`. Para agregar un idioma,
+copiá `en.ts`, traducilo y sumalo a `LANGS` en `shared/i18n/index.ts`. Hay un
+test que falla si a algún idioma le falta un texto.
+
 ## Tus enlaces (X / Twitter y donaciones)
 
 Se configuran en `sykos.config.json` y aparecen en el popup y en el menú del

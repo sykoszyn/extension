@@ -4,6 +4,7 @@
 import { useState, type ReactNode } from 'react';
 import { flagEmoji, levelColor, NA } from '@shared/utils/format';
 import { mapHue, mapLabel, mapShort } from '@shared/utils/maps';
+import { t } from '@shared/i18n';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -65,7 +66,7 @@ export function LevelBadge({ level, size = 26 }: { level: number | null | undefi
   const c = levelColor(level);
   return (
     <span
-      title={level ? `FACEIT level ${level}` : 'Nivel no disponible'}
+      title={level ? t('level.n', { n: level }) : t('level.na')}
       className="st-num inline-grid shrink-0 place-items-center rounded-full text-[11px]"
       style={{ width: size, height: size, color: c, boxShadow: `inset 0 0 0 2px ${c}`, background: '#0c0d10' }}
     >
@@ -164,12 +165,12 @@ export function ErrorBox({ error, onRetry }: { error: { code?: string; message: 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blood-500/30 bg-blood-500/[0.07] px-4 py-3 text-[13px]">
       <div>
-        <div className="font-semibold text-blood-400">{cfg ? 'Conexión no configurada' : 'No se pudieron cargar los datos'}</div>
+        <div className="font-semibold text-blood-400">{cfg ? t('err.notConfigured') : t('err.loadFailed')}</div>
         <div className="text-fog-300">{error.message}</div>
       </div>
       {onRetry && !cfg && (
         <button className="st-btn-ghost" onClick={onRetry}>
-          Reintentar
+          {t('retry')}
         </button>
       )}
     </div>
@@ -187,7 +188,7 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'warn'; ch
 
 /** Small "source & period" footnote required on every stat block. */
 export function Source({ children }: { children: ReactNode }) {
-  return <p className="mt-3 text-[11px] text-fog-500">Fuente: {children}</p>;
+  return <p className="mt-3 text-[11px] text-fog-500">{t('source')}: {children}</p>;
 }
 
 export function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { key: T; label: string }[] }) {

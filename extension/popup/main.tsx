@@ -9,7 +9,9 @@ import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getURL, openTab } from '@ext/compat/browser';
 import { LogoMark } from '@dash/components/Logo';
-import { AutoAcceptSwitch, NicknameForm } from '@dash/components/Simple';
+import { AutoAcceptSwitch, LanguageSelect, NicknameForm } from '@dash/components/Simple';
+import { useLang } from '@dash/hooks/useLang';
+import { t } from '@shared/i18n';
 import { CreatorLinks } from '@dash/components/CreatorLinks';
 import { Avatar, ErrorBox, LevelBadge, ResultChip, Skeleton } from '@dash/components/ui';
 import { useRpc } from '@dash/hooks/useRpc';
@@ -38,7 +40,7 @@ function ProfileCard({ id, onChange }: { id: string; onChange: () => void }) {
         <div className="min-w-0 flex-1">
           <div className="truncate font-display text-[17px] font-bold uppercase leading-tight tracking-wide">{p.data.nickname}</div>
           <button className="text-[11px] text-fog-500 hover:text-ember-400" onClick={onChange}>
-            Cambiar nickname
+            {t('nick.change')}
           </button>
         </div>
         <LevelBadge level={p.data.level} size={28} />
@@ -54,7 +56,7 @@ function ProfileCard({ id, onChange }: { id: string; onChange: () => void }) {
         <span className="text-fog-400">
           K/D <b className="text-fog-100">{ratio(life.data?.kd)}</b>
         </span>
-        <span className="flex gap-0.5" title="Últimas 5 partidas">
+        <span className="flex gap-0.5" title={t('lastN', { n: 5 })}>
           {(recent.data ?? []).slice(0, 5).map((l) => (
             <ResultChip key={l.matchId} win={l.win} />
           ))}
@@ -63,9 +65,9 @@ function ProfileCard({ id, onChange }: { id: string; onChange: () => void }) {
       <LevelBar elo={p.data.elo} className="mt-2.5" />
       {today.matches > 0 && (
         <div className="mt-2 flex items-center justify-between rounded-md bg-white/[0.03] px-2 py-1.5 text-[12px]">
-          <span className="text-fog-400">Hoy</span>
+          <span className="text-fog-400">{t('today')}</span>
           <span>
-            <b className="text-win">{today.wins}V</b> <span className="text-fog-500">·</span> <b className="text-loss">{today.losses}D</b>
+            <b className="text-win">{today.wins}{t('w')}</b> <span className="text-fog-500">·</span> <b className="text-loss">{today.losses}{t('l')}</b>
             <span className="text-fog-500"> · K/D </span>
             <b className="text-fog-100">{ratio(today.kd)}</b>
           </span>
@@ -79,9 +81,10 @@ function Popup() {
   const { settings, ready, update } = useSettings();
   const [editing, setEditing] = useState(false);
   const up = (p: Partial<Settings>) => update(p);
+  const lang = useLang(settings.language);
 
   return (
-    <div className="st-root w-[320px] space-y-4 p-4">
+    <div key={lang} className="st-root w-[320px] space-y-4 p-4">
       <header>
         <div className="flex items-center gap-2">
           <LogoMark size={22} />
@@ -89,7 +92,7 @@ function Popup() {
             Sykos<span className="text-ember-500">Tracker</span>
           </span>
         </div>
-        <p className="mt-0.5 text-[12px] text-fog-500">Configúralo una vez y funciona en todos los perfiles.</p>
+        <p className="mt-0.5 text-[12px] text-fog-500">{t('popup.tagline')}</p>
       </header>
 
       {!ready ? (
@@ -106,11 +109,14 @@ function Popup() {
 
       <footer className="flex items-center justify-between border-t border-white/[0.06] pt-3 text-[12px]">
         <button className="font-semibold text-ember-400 hover:text-ember-300" onClick={() => open('overview')}>
-          Ver análisis completo →
+          {t('popup.full')} →
         </button>
-        <button className="text-fog-400 hover:text-fog-100" onClick={() => open('settings')}>
-          Ajustes
-        </button>
+        <span className="flex items-center gap-2">
+          <LanguageSelect settings={settings} update={up} />
+          <button className="text-fog-400 hover:text-fog-100" onClick={() => open('settings')}>
+            {t('nav.settings')}
+          </button>
+        </span>
       </footer>
       <CreatorLinks compact />
     </div>

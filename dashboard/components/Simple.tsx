@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { rpc, RpcError } from '@shared/rpc';
 import type { Settings } from '@shared/types/settings';
 import { Spinner, cx } from './ui';
+import { LANGS, t, type LangSetting } from '@shared/i18n';
 
 export function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
   return (
@@ -40,7 +41,7 @@ export function NicknameForm({ settings, update, onDone, autoFocus }: { settings
       await update({ myNickname: p.nickname, myPlayerId: p.id });
       onDone?.();
     } catch (e) {
-      setError(e instanceof RpcError && e.code === 'NOT_FOUND' ? `No existe "${q}" en FACEIT. Revisa mayúsculas y guiones.` : String((e as Error).message));
+      setError(e instanceof RpcError && e.code === 'NOT_FOUND' ? t('nick.notFound', { q }) : String((e as Error).message));
     } finally {
       setBusy(false);
     }
@@ -55,11 +56,11 @@ export function NicknameForm({ settings, update, onDone, autoFocus }: { settings
       }}
     >
       <label className="block">
-        <span className="st-label">Tu nickname de FACEIT</span>
-        <input className="st-input mt-1 !py-2.5 !text-[14px]" value={nick} autoFocus={autoFocus} onChange={(e) => setNick(e.target.value)} placeholder="tu_nickname" spellCheck={false} />
+        <span className="st-label">{t('nick.label')}</span>
+        <input className="st-input mt-1 !py-2.5 !text-[14px]" value={nick} autoFocus={autoFocus} onChange={(e) => setNick(e.target.value)} placeholder={t('nick.placeholder')} spellCheck={false} />
       </label>
       <button className="st-btn-primary w-full !py-2.5 !text-[14px]" disabled={busy || !nick.trim()}>
-        {busy ? <Spinner className="border-ink-950 border-t-transparent" /> : 'Guardar'}
+        {busy ? <Spinner className="border-ink-950 border-t-transparent" /> : t('save')}
       </button>
       {error && <p className="text-[12px] text-blood-400">{error}</p>}
     </form>
@@ -80,12 +81,12 @@ export function AutoAcceptSwitch({ settings, update }: { settings: Settings; upd
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-ember-400" aria-hidden>
               <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
             </svg>
-            Auto-aceptar partidas
+            {t('aa.title')}
           </div>
-          <div className="text-[12px] text-fog-500">{aa.enabled ? `Acepta tras ${aa.delaySeconds} s (puedes cancelar)` : 'Acepta solo cuando aparece una partida'}</div>
+          <div className="text-[12px] text-fog-500">{aa.enabled ? t('aa.onSub', { n: aa.delaySeconds }) : t('aa.offSub')}</div>
         </div>
         <Toggle
-          label="Auto-aceptar partidas"
+          label={t('aa.title')}
           checked={aa.enabled}
           onChange={(v) => {
             if (!v) return void set({ enabled: false });
@@ -96,7 +97,7 @@ export function AutoAcceptSwitch({ settings, update }: { settings: Settings; upd
       </div>
       {confirming && (
         <div className="mt-2 rounded-lg border border-ember-500/30 bg-ember-500/[0.07] p-2.5 text-[12px] text-ember-200">
-          Pulsará el botón «Aceptar» de FACEIT por ti tras una cuenta atrás. FACEIT podría no permitir automatizar su web: úsalo bajo tu responsabilidad.
+          {t('aa.warning')}
           <div className="mt-2 flex gap-2">
             <button
               className="st-btn-primary !py-1"
@@ -105,14 +106,33 @@ export function AutoAcceptSwitch({ settings, update }: { settings: Settings; upd
                 void set({ enabled: true, acknowledged: true });
               }}
             >
-              Activar
+              {t('aa.enable')}
             </button>
             <button className="st-btn-ghost !py-1" onClick={() => setConfirming(false)}>
-              Cancelar
+              {t('cancel')}
             </button>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/** Language picker ("Auto" follows the browser). */
+export function LanguageSelect({ settings, update, className }: { settings: Settings; update: (p: Partial<Settings>) => Promise<unknown>; className?: string }) {
+  return (
+    <select
+      className={cx('st-input !w-auto !py-1 text-[12px]', className)}
+      value={settings.language}
+      onChange={(e) => update({ language: e.target.value as LangSetting })}
+      aria-label={t('lang.label')}
+    >
+      <option value="auto">{t('lang.auto')}</option>
+      {LANGS.map((l) => (
+        <option key={l.code} value={l.code}>
+          {l.label}
+        </option>
+      ))}
+    </select>
   );
 }

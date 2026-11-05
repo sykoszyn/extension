@@ -3,6 +3,7 @@ import { rpc } from '@shared/rpc';
 import { updateSettings } from '@shared/settings';
 import type { AutoAcceptSettings } from '@shared/types/settings';
 import { beep, safeClick, watchMatchFound } from './auto-accept';
+import { t } from '@shared/i18n';
 
 type Phase = { kind: 'idle' } | { kind: 'found'; btn: HTMLElement; left: number } | { kind: 'cancelled' } | { kind: 'accepted' } | { kind: 'manual' };
 
@@ -42,14 +43,14 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
       if (ok) void rpc('notify.matchFound', { accepted: true }).catch(() => undefined);
       return;
     }
-    const t = setTimeout(() => setPhase({ ...phase, left: phase.left - 1 }), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setPhase({ ...phase, left: phase.left - 1 }), 1000);
+    return () => clearTimeout(timer);
   }, [phase, settings.enabled]);
 
   useEffect(() => {
     if (phase.kind !== 'accepted' && phase.kind !== 'cancelled') return;
-    const t = setTimeout(() => setPhase({ kind: 'idle' }), 5000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setPhase({ kind: 'idle' }), 5000);
+    return () => clearTimeout(timer);
   }, [phase.kind]);
 
   if (phase.kind === 'idle') return null;
@@ -62,12 +63,12 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
           <>
             <div className="st-label !text-ember-300">SykosTracker · Auto Accept</div>
             <div className="mt-1 flex items-baseline justify-between">
-              <span className="font-display text-[20px] font-bold uppercase">Partida encontrada</span>
+              <span className="font-display text-[20px] font-bold uppercase">{t('aa.found')}</span>
               <span className="st-num text-[34px] leading-none text-ember-400">{phase.left}</span>
             </div>
             <div className="mt-3 flex gap-2">
               <button className="st-btn-ghost flex-1" onClick={() => setPhase({ kind: 'cancelled' })}>
-                Cancelar
+                {t('cancel')}
               </button>
               <button
                 className="st-btn-ghost flex-1"
@@ -76,10 +77,10 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
                   void updateSettings({ autoAccept: { ...settings, enabled: false } });
                 }}
               >
-                Desactivar
+                {t('aa.disable')}
               </button>
               <button className="st-btn-primary flex-1" onClick={() => setPhase({ ...phase, left: 0 })}>
-                Aceptar ya
+                {t('aa.acceptNow')}
               </button>
             </div>
           </>
@@ -87,12 +88,12 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
         {phase.kind === 'manual' && (
           <>
             <div className="st-label !text-ember-300">SykosTracker</div>
-            <div className="font-display text-[20px] font-bold uppercase">¡Partida encontrada!</div>
-            <div className="text-[12px] text-fog-400">Acepta en FACEIT. Auto Accept está desactivado.</div>
+            <div className="font-display text-[20px] font-bold uppercase">{t('aa.foundManual')}</div>
+            <div className="text-[12px] text-fog-400">{t('aa.manualSub')}</div>
           </>
         )}
-        {phase.kind === 'accepted' && <div className="font-semibold text-win">✓ Partida aceptada por Auto Accept</div>}
-        {phase.kind === 'cancelled' && <div className="font-semibold text-fog-300">Auto Accept cancelado · acepta manualmente</div>}
+        {phase.kind === 'accepted' && <div className="font-semibold text-win">✓ {t('aa.accepted')}</div>}
+        {phase.kind === 'cancelled' && <div className="font-semibold text-fog-300">{t('aa.cancelled')}</div>}
       </div>
     </div>
   );

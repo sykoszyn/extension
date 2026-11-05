@@ -6,23 +6,25 @@ import { Avatar, cx } from './components/ui';
 import { href, navigate, useHashRoute, type Page } from './hooks/useHashRoute';
 import { useSettings } from './hooks/useSettings';
 import { ComparePage, FavoritesPage, HistoryPage, LobbyPage, MapsPage, OverviewPage, SettingsPage } from './pages';
+import { useLang } from './hooks/useLang';
+import { t, type Key } from '@shared/i18n';
 
 /** Only four sections in the menu. Lobby, Mapas and Favoritos stay reachable from links. */
-const NAV: { page: Page; label: string; icon: ReactNode }[] = [
-  { page: 'overview', label: 'Mi perfil', icon: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" /> },
-  { page: 'compare', label: 'Comparar jugador', icon: <path d="M7 4v16M17 4v16M3 8h8M13 16h8" /> },
-  { page: 'history', label: 'Historial', icon: <path d="M12 7v5l3 2M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" /> },
-  { page: 'settings', label: 'Ajustes', icon: <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 14H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /> },
+const NAV: { page: Page; label: Key; icon: ReactNode }[] = [
+  { page: 'overview', label: 'nav.profile', icon: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" /> },
+  { page: 'compare', label: 'nav.compare', icon: <path d="M7 4v16M17 4v16M3 8h8M13 16h8" /> },
+  { page: 'history', label: 'nav.history', icon: <path d="M12 7v5l3 2M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" /> },
+  { page: 'settings', label: 'nav.settings', icon: <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 14H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /> },
 ];
 
-const TITLES: Record<Page, string> = {
-  overview: 'Perfil',
-  compare: 'Comparar jugador',
-  history: 'Historial',
-  lobby: 'Análisis de sala',
-  maps: 'Mapas',
-  favorites: 'Favoritos',
-  settings: 'Ajustes',
+const TITLES: Record<Page, Key> = {
+  overview: 'title.profile',
+  compare: 'nav.compare',
+  history: 'nav.history',
+  lobby: 'title.room',
+  maps: 'maps',
+  favorites: 'title.favorites',
+  settings: 'nav.settings',
 };
 /** Pages that belong to a menu entry for highlighting. */
 const PARENT: Partial<Record<Page, Page>> = { maps: 'overview', lobby: 'overview', favorites: 'compare' };
@@ -31,6 +33,7 @@ export function App() {
   const route = useHashRoute();
   const { settings, ready, update } = useSettings();
   const active = PARENT[route.page] ?? route.page;
+  const lang = useLang(settings.language);
 
   const body = !ready ? null : (() => {
     switch (route.page) {
@@ -52,12 +55,12 @@ export function App() {
   })();
 
   return (
-    <div className="st-root flex min-h-screen bg-ink-950">
+    <div key={lang} className="st-root flex min-h-screen bg-ink-950">
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-white/[0.05] bg-ink-900/60 px-3 py-5 md:flex">
         <a href={href('overview')} className="px-2">
           <Wordmark />
         </a>
-        <nav className="mt-8 space-y-0.5" aria-label="Secciones">
+        <nav className="mt-8 space-y-0.5" aria-label={t('nav.aria')}>
           {NAV.map((n) => (
             <a
               key={n.page}
@@ -71,7 +74,7 @@ export function App() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={active === n.page ? 'text-ember-500' : ''} aria-hidden>
                 {n.icon}
               </svg>
-              {n.label}
+              {t(n.label)}
             </a>
           ))}
         </nav>
@@ -83,11 +86,11 @@ export function App() {
             </button>
           ) : (
             <a href={href('settings')} className="text-ember-400">
-              Vincula tu cuenta →
+              {t('nav.link')} →
             </a>
           )}
           <CreatorLinks className="mt-3" />
-          <p className="mt-2">No afiliado a FACEIT.</p>
+          <p className="mt-2">{t('notAffiliated')}</p>
         </div>
       </aside>
 
@@ -97,15 +100,15 @@ export function App() {
             <div className="md:hidden">
               <Wordmark />
             </div>
-            <h1 className="hidden font-display text-[22px] font-bold uppercase tracking-wide md:block">{TITLES[route.page]}</h1>
+            <h1 className="hidden font-display text-[22px] font-bold uppercase tracking-wide md:block">{t(TITLES[route.page])}</h1>
             <div className="ml-auto w-full max-w-md">
               <PlayerSearch onSelect={(r) => (r.kind === 'player' ? navigate('overview', r.id) : navigate('lobby', r.id))} />
             </div>
           </div>
-          <nav className="st-scroll flex gap-1 overflow-x-auto px-3 pb-2 md:hidden" aria-label="Secciones">
+          <nav className="st-scroll flex gap-1 overflow-x-auto px-3 pb-2 md:hidden" aria-label={t('nav.aria')}>
             {NAV.map((n) => (
               <a key={n.page} href={href(n.page)} className={cx('whitespace-nowrap rounded-md px-2.5 py-1 text-[12px] font-semibold', active === n.page ? 'bg-ember-500 text-ink-950' : 'text-fog-400')}>
-                {n.label}
+                {t(n.label)}
               </a>
             ))}
           </nav>

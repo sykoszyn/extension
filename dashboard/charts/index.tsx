@@ -8,6 +8,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceLine, Res
 import type { EloSnapshot, MatchStatLine } from '@shared/types/faceit';
 import { date, fmt, ratio } from '@shared/utils/format';
 import { mapLabel } from '@shared/utils/maps';
+import { locale, t } from '@shared/i18n';
 
 export const SERIES = { you: '#e85a12', them: '#3d9be9' } as const;
 const STATUS = { win: '#3ddc97', loss: '#ff5468', none: '#6e7482' };
@@ -24,7 +25,7 @@ export function EloChart({ data }: { data: EloSnapshot[] }) {
     <ResponsiveContainer width="100%" height={180}>
       <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
         <CartesianGrid {...GRID} />
-        <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={(t) => new Date(t).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })} {...AXIS} minTickGap={32} />
+        <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={(v) => new Date(v).toLocaleDateString(locale(), { day: '2-digit', month: 'short' })} {...AXIS} minTickGap={32} />
         <YAxis domain={['dataMin - 25', 'dataMax + 25']} {...AXIS} width={48} allowDecimals={false} />
         <Tooltip
           cursor={{ stroke: 'rgba(255,255,255,0.25)', strokeWidth: 1 }}
@@ -64,7 +65,7 @@ export function FormChart({ lines }: { lines: MatchStatLine[] }) {
                   {mapLabel(p.map)} · {date(p.t)}
                 </div>
                 <div className="mt-0.5 font-semibold" style={{ color: p.win === null ? STATUS.none : p.win ? STATUS.win : STATUS.loss }}>
-                  {p.win === null ? 'Sin resultado' : p.win ? 'Victoria' : 'Derrota'}
+                  {p.win === null ? '—' : p.win ? t('win') : t('loss')}
                 </div>
                 <div className="st-num">
                   K/D {ratio(p.kd)} · {fmt(p.kills)}/{fmt(p.deaths)} · ADR {fmt(p.adr, 1)}

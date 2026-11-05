@@ -19,6 +19,7 @@ import { PvpPanel } from '../components/PvpPanel';
 import { Avatar, Card, Empty, ErrorBox, Skeleton } from '../components/ui';
 import { getRecentSearches, clearRecentSearches, updateSettings } from '@shared/settings';
 import { NicknameForm } from '../components/Simple';
+import { t } from '@shared/i18n';
 import { useSettings as useSettingsLite } from '../hooks/useSettings';
 import type { RecentSearch } from '@shared/types/settings';
 
@@ -29,8 +30,8 @@ function NeedMe() {
   const { settings } = useSettingsLite();
   return (
     <div className="mx-auto mt-10 max-w-sm">
-      <Card title="Empieza aquí">
-        <p className="mb-3 text-[13px] text-fog-400">Escribe tu nickname de FACEIT. No hace falta cuenta ni contraseña.</p>
+      <Card title={t('start.title')}>
+        <p className="mb-3 text-[13px] text-fog-400">{t('start.body')}</p>
         <NicknameForm settings={settings} update={updateSettings} autoFocus />
       </Card>
     </div>
@@ -42,7 +43,7 @@ export function FavButton({ id, nickname, avatar }: { id: string; nickname: stri
   const fav = isFavorite(id);
   return (
     <button className={fav ? 'st-btn-primary' : 'st-btn-ghost'} onClick={() => toggle({ id, nickname, avatar })} aria-pressed={fav}>
-      {fav ? '★ Favorito' : '☆ Favorito'}
+      {fav ? '★' : '☆'} {t('favorite')}
     </button>
   );
 }
@@ -53,14 +54,14 @@ function PlayerActions({ id, nickname, avatar, meId }: { id: string; nickname: s
       <FavButton id={id} nickname={nickname} avatar={avatar} />
       {meId && meId !== id && (
         <button className="st-btn-primary" onClick={() => navigate('compare', id)}>
-          Comparar conmigo
+          {t('compareWithMe')}
         </button>
       )}
       <button className="st-btn-ghost" onClick={() => navigate('history', id)}>
-        Historial
+        {t('nav.history')}
       </button>
       <button className="st-btn-ghost" onClick={() => navigate('maps', id)}>
-        Mapas
+        {t('maps')}
       </button>
     </>
   );
@@ -76,8 +77,8 @@ export function ComparePage({ arg, settings }: { arg: string | null; settings: S
   if (!settings.myPlayerId) return <NeedMe />;
   return (
     <div className="space-y-4">
-      <Card title="Comparar jugador" className="z-30">
-        <p className="mb-3 text-[13px] text-fog-400">Busca a un jugador para ver cuántas veces habéis jugado juntos o en contra.</p>
+      <Card title={t('nav.compare')} className="z-30">
+        <p className="mb-3 text-[13px] text-fog-400">{t('compare.body')}</p>
         <PlayerSearch onSelect={(r) => (r.kind === 'player' ? navigate('compare', r.id) : navigate('lobby', r.id))} autoFocus={!arg} />
       </Card>
       {arg ? <PvpPanel key={arg} meId={settings.myPlayerId} otherId={arg} /> : <FavoritesPage settings={settings} />}
@@ -90,11 +91,11 @@ function SubjectPicker({ page, settings, arg }: { page: 'history' | 'maps'; sett
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="min-w-[260px] flex-1">
-        <PlayerSearch onSelect={(r) => r.kind === 'player' && navigate(page, r.id)} placeholder="Ver otro jugador…" />
+        <PlayerSearch onSelect={(r) => r.kind === 'player' && navigate(page, r.id)} placeholder={t('search.other')} />
       </div>
       {arg && settings.myPlayerId && arg !== settings.myPlayerId && (
         <button className="st-btn-ghost" onClick={() => navigate(page)}>
-          Volver a mí
+          {t('backToMe')}
         </button>
       )}
       {profile.data && (
@@ -127,11 +128,11 @@ export function MapsPage({ arg, settings }: { arg: string | null; settings: Sett
     <div className="space-y-4">
       <SubjectPicker page="maps" settings={settings} arg={arg} />
       {profile.data && <PlayerHeader profile={profile.data} compact />}
-      <Card title="Map Performance · partidas recientes">
+      <Card title={t('maps.recentTitle')}>
         {recent.error ? <ErrorBox error={recent.error} onRetry={() => recent.reload()} /> : recent.data ? <MapPerformance lines={recent.data} lifetime={lifetime.data} windows={['5', '10', '20', '50', '100']} /> : <Skeleton className="h-64" />}
       </Card>
       {lifetime.data && (
-        <Card title="Rendimiento por mapa · lifetime" pad={false}>
+        <Card title={t('profile.mapsLifetime')} pad={false}>
           <MapTable lifetime={lifetime.data} />
         </Card>
       )}
@@ -151,14 +152,12 @@ export function LobbyPage({ arg, settings }: { arg: string | null; settings: Set
     if (p.kind === 'match') {
       setErr(null);
       navigate('lobby', p.value);
-    } else setErr('Pega la URL de una sala de FACEIT (…/cs2/room/1-…) o el ID de la partida.');
+    } else setErr(t('room.invalid'));
   };
   return (
     <div className="space-y-4">
-      <Card title="Lobby Analyzer">
-        <p className="mb-3 text-[13px] text-fog-400">
-          Al entrar en una sala de FACEIT, SykosTracker muestra el análisis automáticamente sobre la propia página. Aquí puedes abrir cualquier sala por URL o ID.
-        </p>
+      <Card title={t('title.room')}>
+        <p className="mb-3 text-[13px] text-fog-400">{t('room.body')}</p>
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -167,19 +166,19 @@ export function LobbyPage({ arg, settings }: { arg: string | null; settings: Set
           }}
         >
           <input className="st-input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="https://www.faceit.com/es/cs2/room/1-…" />
-          <button className="st-btn-primary">Analizar</button>
+          <button className="st-btn-primary">{t('room.analyze')}</button>
         </form>
         {err && <p className="mt-1 text-[12px] text-blood-400">{err}</p>}
         {last && last.matchId !== arg && (
           <button className="mt-3 text-[12px] text-ember-400 hover:underline" onClick={() => navigate('lobby', last.matchId)}>
-            Última sala detectada en FACEIT ({relative(last.at)}): {last.matchId}
+            {t('room.last', { when: relative(last.at) })}: {last.matchId}
           </button>
         )}
       </Card>
       {arg && MATCH_ID_RE.test(arg) ? (
         <SimpleLobby key={arg} matchId={arg} myPlayerId={settings.myPlayerId} onOpenPlayer={(id) => navigate('overview', id)} />
       ) : (
-        <Empty title="Ninguna sala seleccionada" />
+        <Empty title={t('room.none')} />
       )}
     </div>
   );
@@ -203,19 +202,19 @@ export function FavoritesPage({ settings }: { settings: Settings }) {
         </button>
       )}
       <button className="st-btn-ghost !py-1" onClick={() => navigate('history', p.id)}>
-        Historial
+        {t('nav.history')}
       </button>
       <button className="st-btn-ghost !py-1" onClick={() => navigate('maps', p.id)}>
-        Mapas
+        {t('maps')}
       </button>
-      <button className={fav ? 'st-btn-primary !py-1' : 'st-btn-ghost !py-1'} onClick={() => toggle(p)} aria-label={fav ? 'Quitar de favoritos' : 'Añadir a favoritos'}>
+      <button className={fav ? 'st-btn-primary !py-1' : 'st-btn-ghost !py-1'} onClick={() => toggle(p)} aria-label={fav ? t('fav.remove') : t('fav.add')}>
         {fav ? '★' : '☆'}
       </button>
     </li>
   );
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card title={`Favoritos (${favorites.length})`} pad={false}>
+      <Card title={`${t('title.favorites')} (${favorites.length})`} pad={false}>
         {favorites.length ? (
           <ul>
             {favorites.map((f) => (
@@ -224,17 +223,17 @@ export function FavoritesPage({ settings }: { settings: Settings }) {
           </ul>
         ) : (
           <div className="p-4">
-            <Empty title="Sin favoritos" body="Marca jugadores con ☆ desde su perfil para tenerlos a mano." />
+            <Empty title={t('fav.none')} body={t('fav.noneBody')} />
           </div>
         )}
       </Card>
       <Card
-        title="Búsquedas recientes"
+        title={t('search.recent')}
         pad={false}
         right={
           recent.length > 0 && (
             <button className="text-[12px] text-fog-400 hover:text-fog-100" onClick={() => clearRecentSearches().then(() => setRecent([]))}>
-              Borrar
+              {t('clear')}
             </button>
           )
         }
@@ -247,7 +246,7 @@ export function FavoritesPage({ settings }: { settings: Settings }) {
           </ul>
         ) : (
           <div className="p-4">
-            <Empty title="Sin búsquedas" />
+            <Empty title={t('search.none')} />
           </div>
         )}
       </Card>

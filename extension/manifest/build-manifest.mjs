@@ -29,10 +29,11 @@ export function buildManifest(target, version, opts = {}) {
 
   const base = {
     manifest_version: 3,
-    name: 'SykosTracker',
+    name: '__MSG_extName__',
     short_name: 'SykosTracker',
+    default_locale: 'en',
     version,
-    description: 'Estadísticas CS2 en FACEIT: perfiles, Player vs Player, historial, Lobby Analyzer y análisis por mapa.',
+    description: '__MSG_extDesc__',
     icons,
     action: { default_title: 'SykosTracker', default_popup: 'extension/popup/index.html', default_icon: icons },
     options_ui: { page: 'dashboard/index.html#settings', open_in_tab: true },

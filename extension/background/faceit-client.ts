@@ -29,6 +29,7 @@ import { MATCH_ID_RE } from '@shared/utils/faceit-url';
 import { cached, idb } from './db';
 import { faceitGet } from './transport';
 import { HttpError } from './rate-limiter';
+import { t } from '@shared/i18n';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FINISHED = new Set(['FINISHED', 'CANCELLED']);
@@ -104,7 +105,7 @@ export class FaceitClient {
   }
 
   match(id: string, force = false): Promise<MatchDetails> {
-    if (!MATCH_ID_RE.test(id)) throw new Error('ID de partida no válido');
+    if (!MATCH_ID_RE.test(id)) throw new Error(t('err.badMatchId'));
     return cached(
       `match:${id}`,
       { ttl: TTL.matchLive, force, ttlFor: (m: MatchDetails) => (FINISHED.has(m.status) ? TTL.matchFinished : TTL.matchLive) },

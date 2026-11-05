@@ -4,12 +4,13 @@ import { getRecentSearches, pushRecentSearch } from '@shared/settings';
 import type { SearchHit } from '@shared/types/faceit';
 import type { RecentSearch } from '@shared/types/settings';
 import { parseSearchInput } from '@shared/utils/faceit-url';
+import { t } from '@shared/i18n';
 import { Avatar, LevelBadge, Spinner } from './ui';
 
 export type SearchResult = { kind: 'player'; id: string; nickname: string } | { kind: 'match'; id: string };
 
 /** Global search: nickname, FACEIT profile URL, room URL or match id. */
-export function PlayerSearch({ onSelect, placeholder = 'Nickname, URL de FACEIT o ID de partida…', autoFocus }: { onSelect: (r: SearchResult) => void; placeholder?: string; autoFocus?: boolean }) {
+export function PlayerSearch({ onSelect, placeholder, autoFocus }: { onSelect: (r: SearchResult) => void; placeholder?: string; autoFocus?: boolean }) {
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [recent, setRecent] = useState<RecentSearch[]>([]);
@@ -50,7 +51,7 @@ export function PlayerSearch({ onSelect, placeholder = 'Nickname, URL de FACEIT 
   const submit = async () => {
     const parsed = parseSearchInput(q);
     setError(null);
-    if (parsed.kind === 'invalid') return setError('Introduce un nickname válido, una URL de FACEIT o un ID de partida.');
+    if (parsed.kind === 'invalid') return setError(t('search.invalid'));
     if (parsed.kind === 'match') {
       setQ('');
       return onSelect({ kind: 'match', id: parsed.value });
@@ -60,7 +61,7 @@ export function PlayerSearch({ onSelect, placeholder = 'Nickname, URL de FACEIT 
       const p = await rpc('player.resolve', { query: parsed.value });
       await choose({ id: p.id, nickname: p.nickname, avatar: p.avatar });
     } catch (e) {
-      setError(e instanceof RpcError && e.code === 'NOT_FOUND' ? `No existe ningún jugador "${parsed.value}" en FACEIT.` : String((e as Error).message));
+      setError(e instanceof RpcError && e.code === 'NOT_FOUND' ? t('search.notFound', { q: parsed.value }) : String((e as Error).message));
     } finally {
       setBusy(false);
     }
@@ -94,15 +95,15 @@ export function PlayerSearch({ onSelect, placeholder = 'Nickname, URL de FACEIT 
               (e.target as HTMLInputElement).blur();
             }
           }}
-          placeholder={placeholder}
-          aria-label="Buscar jugador"
+          placeholder={placeholder ?? t('search.placeholder')}
+          aria-label={t('search.aria')}
         />
         {busy && <Spinner className="absolute right-3 top-1/2 -translate-y-1/2" />}
       </form>
       {error && <p className="mt-1 text-[12px] text-blood-400">{error}</p>}
       {showDrop && (
         <div role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[320px] overflow-y-auto rounded-xl border border-white/10 bg-ink-800 shadow-[0_20px_50px_-10px_rgba(0,0,0,.9)]">
-          {!q && <div className="st-label px-3 pt-2">Búsquedas recientes</div>}
+          {!q && <div className="st-label px-3 pt-2">{t('search.recent')}</div>}
           {(q ? hits : recent).map((h) => (
             <button key={h.id} className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-white/[0.05]" onMouseDown={(e) => e.preventDefault()} onClick={() => void choose(h)}>
               <Avatar src={h.avatar} name={h.nickname} size={26} />

@@ -4,6 +4,7 @@
  */
 import type { RpcMap, RpcMethod, RpcRequest, RpcResponse } from '@shared/rpc';
 import { getSettings } from '@shared/settings';
+import { setLang, t } from '@shared/i18n';
 import { ext, getURL, notify, onMessage, openTab } from '@ext/compat/browser';
 import { clearCache, idb, pruneCache } from './db';
 import { FaceitClient } from './faceit-client';
@@ -36,8 +37,8 @@ const handlers: Handlers = {
     const s = await getSettings();
     if (s.autoAccept.notify) {
       await notify(`match-${Date.now()}`, {
-        title: p.accepted ? 'SykosTracker · Partida aceptada' : 'SykosTracker · ¡Partida encontrada!',
-        message: p.accepted ? 'Auto Accept ha pulsado "Aceptar" por ti.' : 'Vuelve a FACEIT y acepta la partida.',
+        title: `SykosTracker · ${p.accepted ? t('aa.accepted') : t('aa.foundManual')}`,
+        message: p.accepted ? t('notif.acceptedBody') : t('notif.foundBody'),
         requireInteraction: !p.accepted,
       });
     }
@@ -53,8 +54,8 @@ const handlers: Handlers = {
       const s = await getSettings();
       const probe = s.myNickname || 's1mple';
       const p = await client.resolvePlayer(probe, true);
-      const via = resolveKey(s).source === 'proxy' ? 'a través del servidor de SykosTracker' : 'directa con tu API key';
-      return { ok: true, message: `Conexión con FACEIT correcta (${via}). Encontrado: ${p.nickname}${p.elo ? ` (${p.elo} ELO)` : ''}.` };
+      const via = resolveKey(s).source === 'proxy' ? t('test.viaProxy') : t('test.viaKey');
+      return { ok: true, message: t('test.ok', { via, nick: `${p.nickname}${p.elo ? ` (${p.elo} ELO)` : ''}` }) };
     } catch (e) {
       return { ok: false, message: String((e as Error).message) };
     }
@@ -73,7 +74,11 @@ onMessage((msg: RpcRequest, sender) => {
   // Only accept messages from our own extension contexts.
   if (sender.id && sender.id !== ext.runtime.id) return undefined;
   const h = handlers[msg.method] as (p: unknown, s: chrome.runtime.MessageSender) => Promise<unknown>;
-  return h(msg.params, sender).then(
+  // Error/notification texts follow the user's language.
+  return getSettings()
+    .then((s) => setLang(s.language))
+    .then(() => h(msg.params, sender))
+    .then(
     (data): RpcResponse<unknown> => ({ ok: true, data }),
     (e): RpcResponse<unknown> => ({ ok: false, error: { code: errorCode(e), message: String(e?.message ?? e) } }),
   );

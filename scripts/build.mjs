@@ -99,6 +99,7 @@ for (const t of targets) {
   await mkdir(dir, { recursive: true });
   await cp(out, dir, { recursive: true });
   await cp(r('extension/assets/icons'), path.join(dir, 'icons'), { recursive: true });
+  await cp(r('extension/_locales'), path.join(dir, '_locales'), { recursive: true });
   await writeFile(path.join(dir, 'manifest.json'), JSON.stringify(buildManifest(t, pkg.version, { proxyUrl }), null, 2));
   console.log(`✓ ${path.relative(root, dir)}`);
 }

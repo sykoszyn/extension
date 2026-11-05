@@ -1,10 +1,11 @@
-/** Display helpers. `null` always renders as an em dash — never as 0. */
+/** Display helpers. `null` always renders as an em dash — never as 0. Locale follows the UI language. */
+import { locale } from '../i18n';
 
 export const NA = '—';
 
 export function fmt(n: number | null | undefined, digits = 0): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return NA;
-  return n.toLocaleString('es-ES', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return n.toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 export function pct(n: number | null | undefined, digits = 0): string {
@@ -18,7 +19,7 @@ export function ratio(n: number | null | undefined): string {
 export function date(ms: number | null | undefined, withTime = false): string {
   if (!ms) return NA;
   const d = new Date(ms);
-  return d.toLocaleDateString('es-ES', {
+  return d.toLocaleDateString(locale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -28,17 +29,16 @@ export function date(ms: number | null | undefined, withTime = false): string {
 
 export function relative(ms: number | null | undefined, now = Date.now()): string {
   if (!ms) return NA;
-  const diff = Math.max(0, now - ms);
-  const m = Math.round(diff / 60_000);
-  if (m < 1) return 'ahora';
-  if (m < 60) return `hace ${m} min`;
+  const rtf = new Intl.RelativeTimeFormat(locale(), { numeric: 'auto' });
+  const m = Math.round((ms - now) / 60_000); // negative = past
+  if (Math.abs(m) < 60) return rtf.format(m, 'minute');
   const h = Math.round(m / 60);
-  if (h < 24) return `hace ${h} h`;
+  if (Math.abs(h) < 24) return rtf.format(h, 'hour');
   const d = Math.round(h / 24);
-  if (d < 31) return `hace ${d} d`;
+  if (Math.abs(d) < 31) return rtf.format(d, 'day');
   const mo = Math.round(d / 30);
-  if (mo < 12) return `hace ${mo} mes${mo > 1 ? 'es' : ''}`;
-  return `hace ${Math.round(mo / 12)} año(s)`;
+  if (Math.abs(mo) < 12) return rtf.format(mo, 'month');
+  return rtf.format(Math.round(mo / 12), 'year');
 }
 
 export function duration(startMs: number | null, endMs: number | null): string {

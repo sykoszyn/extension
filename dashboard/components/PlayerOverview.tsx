@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
+import { t } from '@shared/i18n';
 import type { LifetimeStats, MatchStatLine, PlayerProfile } from '@shared/types/faceit';
 import { currentStreak, formSummary } from '@shared/utils/analytics';
-import { date, fmt, pct, ratio, relative } from '@shared/utils/format';
+import { date, fmt, pct, ratio } from '@shared/utils/format';
 import { mapLabel } from '@shared/utils/maps';
 import { EloChart, FormChart } from '../charts';
 import { useRpc } from '../hooks/useRpc';
 import { LevelBar } from './LevelBar';
-import { Avatar, Card, Empty, ErrorBox, Flag, FormStrip, LevelBadge, MapBadge, Notice, Skeleton, SkeletonGrid, Source, StatTile, cx } from './ui';
+import { Avatar, Card, Empty, ErrorBox, Flag, FormStrip, LevelBadge, MapBadge, Notice, Skeleton, SkeletonGrid, StatTile, cx } from './ui';
 
 export function PlayerHeader({ profile, actions, compact }: { profile: PlayerProfile; actions?: ReactNode; compact?: boolean }) {
   return (
@@ -23,7 +24,7 @@ export function PlayerHeader({ profile, actions, compact }: { profile: PlayerPro
             {profile.region && <span>{profile.region}</span>}
             {profile.steamNickname && <span>Steam: {profile.steamNickname}</span>}
             <a className="text-ember-400 hover:underline" href={profile.faceitUrl} target="_blank" rel="noreferrer">
-              Perfil FACEIT ↗
+              {t('faceitProfile')} ↗
             </a>
           </div>
         </div>
@@ -44,39 +45,42 @@ export function PlayerHeader({ profile, actions, compact }: { profile: PlayerPro
 export function KpiGrid({ lifetime, recent }: { lifetime: LifetimeStats; recent: MatchStatLine[] }) {
   const form = formSummary(recent.slice(0, 20));
   const streak = currentStreak(recent.map((r) => r.win));
-  const streakLabel = streak.type ? `${streak.length} ${streak.type === 'win' ? 'V' : 'D'}` : '—';
+  const streakLabel = streak.type ? `${streak.length}${streak.type === 'win' ? t('w') : t('l')}` : '—';
+  const last20 = (v: string) => `${t('last20')}: ${v}`;
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatTile label="Partidas" value={fmt(lifetime.matches)} sub={`${fmt(lifetime.wins)} V · ${fmt(lifetime.losses)} D`} />
-        <StatTile label="Win rate" value={pct(lifetime.winRate)} hint="Lifetime CS2, según FACEIT." />
-        <StatTile label="K/D" value={ratio(lifetime.kd)} sub={`Últ. 20: ${ratio(form.kd)}`} />
-        <StatTile label="HS%" value={pct(lifetime.hsPercent)} sub={`Últ. 20: ${pct(form.hsPercent)}`} />
-        <StatTile label="ADR" value={fmt(lifetime.adr ?? form.adr, 1)} sub={lifetime.adr === null ? 'Lifetime no disponible · mostrando últ. 20' : `Últ. 20: ${fmt(form.adr, 1)}`} />
-        <StatTile label="K/R (últ. 20)" value={ratio(form.kr)} hint="FACEIT no da K/R lifetime fiable; se calcula sobre las últimas 20 partidas." />
-        <StatTile
-          label="Racha actual"
-          value={streakLabel}
-          tone={streak.type === 'win' ? 'up' : streak.type === 'loss' ? 'down' : undefined}
-          sub={`Mejor racha de victorias: ${fmt(lifetime.longestWinStreak)}`}
-          hint="Calculada sobre las últimas partidas registradas."
-        />
-        <StatTile label="Forma (últ. 20)" value={pct(form.winRate)} sub={`${form.wins} V · ${form.losses} D`} tone={form.winRate !== null ? (form.winRate >= 50 ? 'up' : 'down') : undefined} />
-      </div>
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <StatTile label={t('stat.matches')} value={fmt(lifetime.matches)} sub={t('wl', { w: fmt(lifetime.wins), l: fmt(lifetime.losses) })} />
+      <StatTile label={t('stat.winRate')} value={pct(lifetime.winRate)} />
+      <StatTile label="K/D" value={ratio(lifetime.kd)} sub={last20(ratio(form.kd))} />
+      <StatTile label="HS%" value={pct(lifetime.hsPercent)} sub={last20(pct(form.hsPercent))} />
+      <StatTile label="ADR" value={fmt(lifetime.adr ?? form.adr, 1)} sub={last20(fmt(form.adr, 1))} />
+      <StatTile label={`K/R · ${t('last20')}`} value={ratio(form.kr)} />
+      <StatTile
+        label={t('stat.streak')}
+        value={streakLabel}
+        tone={streak.type === 'win' ? 'up' : streak.type === 'loss' ? 'down' : undefined}
+        sub={t('stat.bestStreak', { n: fmt(lifetime.longestWinStreak) })}
+      />
+      <StatTile
+        label={`${t('stat.form')} · ${t('last20')}`}
+        value={pct(form.winRate)}
+        sub={t('wl', { w: form.wins, l: form.losses })}
+        tone={form.winRate !== null ? (form.winRate >= 50 ? 'up' : 'down') : undefined}
+      />
     </div>
   );
 }
 
 export function MapTable({ lifetime }: { lifetime: LifetimeStats }) {
-  if (!lifetime.maps.length) return <Empty title="Sin datos por mapa" body="FACEIT no devolvió segmentos de mapa para este jugador." />;
+  if (!lifetime.maps.length) return <Empty title={t('maps.none')} />;
   return (
     <div className="st-scroll overflow-x-auto">
       <table className="st-table w-full text-[13px]">
         <thead>
           <tr>
-            <th>Mapa</th>
-            <th className="!text-right">Partidas</th>
-            <th className="!text-right">Win rate</th>
+            <th>{t('col.map')}</th>
+            <th className="!text-right">{t('stat.matches')}</th>
+            <th className="!text-right">{t('stat.winRate')}</th>
             <th className="!text-right">K/D</th>
             <th className="!text-right">ADR</th>
             <th className="!text-right">HS%</th>
@@ -113,12 +117,13 @@ export function PlayerOverview({ query, compact, actions }: { query: string; com
   const elo = useRpc('player.elo', id ? { id } : null);
 
   if (profile.error) return <ErrorBox error={profile.error} onRetry={() => profile.reload()} />;
-  if (!profile.data) return (
-    <div className="space-y-3">
-      <Skeleton className="h-24" />
-      <SkeletonGrid />
-    </div>
-  );
+  if (!profile.data)
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-24" />
+        <SkeletonGrid />
+      </div>
+    );
 
   const p = profile.data;
   const lines = recent.data ?? [];
@@ -131,16 +136,13 @@ export function PlayerOverview({ query, compact, actions }: { query: string; com
       ) : !lifetime.data || recent.loading ? (
         <SkeletonGrid />
       ) : (
-        <Card title="Estadísticas CS2">
+        <Card title={t('profile.stats')}>
           <KpiGrid lifetime={lifetime.data} recent={lines} />
-          <Source>
-            FACEIT Data API · lifetime CS2 y últimas {lines.length} partidas · actualizado {relative(Math.max(p.fetchedAt, lifetime.data.fetchedAt))}
-          </Source>
         </Card>
       )}
 
       <div className={cx('grid gap-3', !compact && 'lg:grid-cols-2')}>
-        <Card title="Rendimiento reciente · K/D por partida" right={<span className="text-[11px] text-fog-500">antigua → reciente</span>}>
+        <Card title={t('profile.recent')} right={<span className="text-[11px] text-fog-500">{t('profile.oldToNew')}</span>}>
           {recent.error ? (
             <ErrorBox error={recent.error} onRetry={() => recent.reload()} />
           ) : recent.loading ? (
@@ -151,36 +153,27 @@ export function PlayerOverview({ query, compact, actions }: { query: string; com
               <div className="mt-2">
                 <FormStrip results={lines.map((l) => l.win)} />
               </div>
-              <Source>FACEIT · últimas {lines.length} partidas CS2 · línea discontinua = K/D 1.0</Source>
             </>
           ) : (
-            <Empty title="Sin partidas recientes" />
+            <Empty title={t('profile.noRecent')} />
           )}
         </Card>
 
-        <Card title="Evolución del ELO">
+        <Card title={t('profile.elo')}>
           {elo.data && elo.data.length >= 2 ? (
-            <>
-              <EloChart data={elo.data} />
-              <Source>
-                ELO observado por SykosTracker en {elo.data.length} lecturas desde {date(elo.data[0].t)}. FACEIT Data API no publica el ELO por partida.
-              </Source>
-            </>
+            <EloChart data={elo.data} />
           ) : (
             <Notice>
-              La API de datos de FACEIT solo expone el <b>ELO actual</b>, no el histórico. SykosTracker registra el ELO cada vez que consultas a este jugador; el gráfico aparecerá
-              a partir de la segunda lectura distinta.{elo.data?.length === 1 && ` Primera lectura: ${fmt(elo.data[0].elo)} ELO (${date(elo.data[0].t)}).`}
+              {t('profile.eloNote')}
+              {elo.data?.length === 1 && ` ${t('profile.eloFirst', { elo: fmt(elo.data[0].elo), date: date(elo.data[0].t) })}`}
             </Notice>
           )}
         </Card>
       </div>
 
       {lifetime.data && (
-        <Card title="Rendimiento por mapa · lifetime" pad={false}>
+        <Card title={t('profile.mapsLifetime')} pad={false}>
           <MapTable lifetime={lifetime.data} />
-          <div className="px-4 pb-3">
-            <Source>FACEIT Data API · segmentos por mapa (5v5) · todo el historial CS2</Source>
-          </div>
         </Card>
       )}
     </div>

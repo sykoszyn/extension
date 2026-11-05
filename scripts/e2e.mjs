@@ -81,7 +81,7 @@ try {
     ([me]) =>
       chrome.storage.local.set({
         // Public default: no API key at all, just the linked nickname.
-        'sykos.settings': { myNickname: 'Sykos', myPlayerId: me },
+        'sykos.settings': { language: 'es', myNickname: 'Sykos', myPlayerId: me },
       }),
     [ME.id],
   );
@@ -207,6 +207,25 @@ try {
     await pop.close();
   });
 
+  await step('Languages: switching changes the UI (ru, en) and back to es', async () => {
+    const setLang = (lang) => sw.evaluate(async (l) => {
+      const st = (await chrome.storage.local.get('sykos.settings'))['sykos.settings'];
+      await chrome.storage.local.set({ 'sykos.settings': { ...st, language: l } });
+    }, lang);
+    const pop = await ctx.newPage();
+    await pop.setViewportSize({ width: 320, height: 600 });
+    for (const [lang, text] of [['ru', 'Полный анализ'], ['en', 'Full analysis'], ['pt', 'Ver análise completa']]) {
+      await setLang(lang);
+      await pop.goto(`chrome-extension://${id}/extension/popup/index.html`);
+      await pop.getByText(text).waitFor({ timeout: 10000 });
+      if (lang === 'ru') await pop.screenshot({ path: path.join(out, '09d-popup-ru.png') });
+    }
+    // live switch without reload: the language picker in the popup
+    await pop.locator('select[aria-label="Language"]').selectOption('es');
+    await pop.getByText('Ver análisis completo').waitFor({ timeout: 10000 });
+    await pop.close();
+  });
+
   // ── In-page integration on (stubbed) faceit.com ──
   const stub = (body = '') => `<!doctype html><html><head><title>FACEIT stub</title></head><body style="background:#1f1f1f;color:#fff;font-family:sans-serif;margin:0"><div style="height:64px;background:#141414"></div><main style="padding:24px">${body}</main></body></html>`;
   let stubBody = '<h1>FACEIT (stub)</h1>';
@@ -217,7 +236,7 @@ try {
     await fp.goto('https://www.faceit.com/es/players/Player123');
     await fp.getByText('Estadísticas CS2').waitFor({ timeout: 20000 });
     await fp.screenshot({ path: path.join(out, '10-faceit-profile.png') });
-    await fp.getByRole('tab', { name: 'VS tú' }).click();
+    await fp.getByRole('tab', { name: 'VS vos' }).click();
     await fp.getByText('Partidas compartidas').waitFor({ timeout: 20000 });
     await fp.screenshot({ path: path.join(out, '11-faceit-pvp.png') });
     await fp.close();

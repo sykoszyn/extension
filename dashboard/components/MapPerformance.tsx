@@ -4,7 +4,8 @@ import { formSummary, mapWindowStats } from '@shared/utils/analytics';
 import { fmt, pct, ratio } from '@shared/utils/format';
 import { mapLabel } from '@shared/utils/maps';
 import type { MapWindowStats } from '@shared/types/analytics';
-import { Empty, MapBadge, Segmented, Source, cx } from './ui';
+import { Empty, MapBadge, Segmented, cx } from './ui';
+import { t } from '@shared/i18n';
 
 export type WindowKey = '5' | '10' | '20' | '50' | '100';
 
@@ -17,7 +18,7 @@ export function MapCard({ m, title, lifetimeWr }: { m: MapWindowStats; title?: s
         <div className="min-w-0 flex-1">
           <div className="truncate font-display text-[15px] font-bold uppercase tracking-wide">{title ?? mapLabel(m.map)}</div>
           <div className="text-[11px] text-fog-500">
-            {m.matches} partida{m.matches === 1 ? '' : 's'} · {m.wins} V · {m.losses} D
+            {t('nMatches', { n: m.matches })} · {t('wl', { w: m.wins, l: m.losses })}
           </div>
         </div>
         <div className={cx('st-num text-[22px]', m.winRate === null ? 'text-fog-500' : m.winRate >= 50 ? 'text-win' : 'text-loss')}>{pct(m.winRate)}</div>
@@ -36,11 +37,11 @@ export function MapCard({ m, title, lifetimeWr }: { m: MapWindowStats; title?: s
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[11px] text-fog-400">
         <span>
-          Racha:{' '}
-          <b className={s.type === 'win' ? 'text-win' : s.type === 'loss' ? 'text-loss' : ''}>{s.type ? `${s.length} ${s.type === 'win' ? 'victoria(s)' : 'derrota(s)'}` : '—'}</b>
+          {t('stat.streak')}:{' '}
+          <b className={s.type === 'win' ? 'text-win' : s.type === 'loss' ? 'text-loss' : ''}>{s.type ? `${s.length}${s.type === 'win' ? t('w') : t('l')}` : '—'}</b>
         </span>
         <span>
-          Máx. {m.longestWinStreak}V / {m.longestLossStreak}D
+          {t('max')} {m.longestWinStreak}{t('w')} / {m.longestLossStreak}{t('l')}
         </span>
         {lifetimeWr !== undefined && <span>Lifetime: {pct(lifetimeWr)}</span>}
       </div>
@@ -58,12 +59,12 @@ export function MapPerformance({ lines, lifetime, windows = ['5', '10', '20'] }:
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Segmented value={win} onChange={setWin} options={windows.map((w) => ({ key: w, label: `Últ. ${w}` }))} />
+        <Segmented value={win} onChange={setWin} options={windows.map((w) => ({ key: w, label: t('lastN', { n: w }) }))} />
         <span className="text-[12px] text-fog-400">
-          {slice.length} partidas · WR {pct(form.winRate)} · K/D {ratio(form.kd)} · ADR {fmt(form.adr, 1)}
+          {t('nMatches', { n: slice.length })} · WR {pct(form.winRate)} · K/D {ratio(form.kd)} · ADR {fmt(form.adr, 1)}
         </span>
       </div>
-      {slice.length < Number(win) && <p className="text-[11px] text-fog-500">Solo hay {slice.length} partidas disponibles en esta ventana.</p>}
+      {slice.length < Number(win) && <p className="text-[11px] text-fog-500">{t('maps.onlyN', { n: slice.length })}</p>}
       {maps.length ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {maps.map((m) => (
@@ -71,9 +72,8 @@ export function MapPerformance({ lines, lifetime, windows = ['5', '10', '20'] }:
           ))}
         </div>
       ) : (
-        <Empty title="Sin partidas en esta ventana" />
+        <Empty title={t('maps.noneInWindow')} />
       )}
-      <Source>FACEIT Data API · /players/&#123;id&#125;/games/cs2/stats · últimas {slice.length} partidas. Rachas calculadas por SykosTracker sobre esa ventana.</Source>
     </div>
   );
 }

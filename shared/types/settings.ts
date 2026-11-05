@@ -11,7 +11,11 @@ export interface AutoAcceptSettings {
   acknowledged: boolean;
 }
 
+import type { LangSetting } from '../i18n';
+
 export interface Settings {
+  /** UI language; "auto" follows the browser. */
+  language: LangSetting;
   /**
    * The user's own FACEIT Data API key (App Studio issues server-side keys).
    * Stored only in this browser (storage.local), sent only to open.faceit.com,

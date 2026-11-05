@@ -8,7 +8,7 @@
  * - No data is read from FACEIT's DOM except: the URL (nickname / match id)
  *   and, for Auto Accept, the visible match-found dialog.
  */
-import { StrictMode, useEffect, useState } from 'react';
+import { Fragment, StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import css from '@dash/styles.css?inline';
 import { contextValid, isContextInvalidated, storageGet, storageSet } from '@ext/compat/browser';
@@ -19,6 +19,8 @@ import { SimpleLobby } from '@dash/components/SimpleLobby';
 import { Notice, Segmented, cx } from '@dash/components/ui';
 import { useRpc } from '@dash/hooks/useRpc';
 import { useSettings } from '@dash/hooks/useSettings';
+import { useLang } from '@dash/hooks/useLang';
+import { t } from '@shared/i18n';
 import { rpc } from '@shared/rpc';
 import { parseFaceitPath, type FaceitRoute } from '@shared/utils/faceit-url';
 import { AcceptOverlay } from './AcceptOverlay';
@@ -27,12 +29,12 @@ function useFaceitRoute(): FaceitRoute {
   const [route, setRoute] = useState(() => parseFaceitPath(location.pathname));
   useEffect(() => {
     let last = location.href;
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       if (location.href === last) return;
       last = location.href;
       setRoute(parseFaceitPath(location.pathname));
     }, 700);
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, []);
   return route;
 }
@@ -75,9 +77,9 @@ function Dock({ wide, title, children, link }: { wide?: boolean; title: string; 
         </span>
         <span className="st-label ml-1">· {title}</span>
         <button className="ml-auto text-[12px] font-semibold text-ember-400 hover:text-ember-300" onClick={() => openDash(link?.hash ?? 'overview')}>
-          {link?.label ?? 'Análisis completo'} ↗
+          {link?.label ?? t('fullAnalysis')} ↗
         </button>
-        <button className="ml-2 grid h-7 w-7 place-items-center rounded-md text-fog-400 hover:bg-white/5 hover:text-fog-100" onClick={() => set(false)} aria-label="Minimizar panel">
+        <button className="ml-2 grid h-7 w-7 place-items-center rounded-md text-fog-400 hover:bg-white/5 hover:text-fog-100" onClick={() => set(false)} aria-label={t('panel.minimize')}>
           ✕
         </button>
       </header>
@@ -98,19 +100,19 @@ function ProfilePanel({ nickname, myId }: { nickname: string; myId: string }) {
           value={tab}
           onChange={setTab}
           options={[
-            { key: 'profile', label: 'Estadísticas' },
-            { key: 'pvp', label: 'VS tú' },
+            { key: 'profile', label: t('panel.stats') },
+            { key: 'pvp', label: t('panel.vsYou') },
           ]}
         />
       )}
-      {!myId && <Notice>Vincula tu cuenta en el dashboard (Ajustes) para ver vuestro historial Player vs Player.</Notice>}
+      {!myId && <Notice>{t('panel.linkFirst')}</Notice>}
       {tab === 'profile' || !myId || isMe ? (
         <PlayerOverview
           query={nickname}
           compact
           actions={(p) => (
             <button className="st-btn-ghost !py-1" onClick={() => openDash(`history/${encodeURIComponent(p.id)}`)}>
-              Historial completo ↗
+              {t('panel.fullHistory')} ↗
             </button>
           )}
         />
@@ -129,21 +131,22 @@ function ContentApp() {
     if (route.kind === 'room') void storageSet('sykos.lastRoom', { matchId: route.matchId, at: Date.now() });
   }, [route]);
 
+  const lang = useLang(settings.language);
   if (!ready) return null;
   return (
-    <>
+    <Fragment key={lang}>
       <AcceptOverlay settings={settings.autoAccept} />
       {route.kind === 'profile' && settings.injectProfilePanel && (
-        <Dock title="Perfil">
+        <Dock title={t('panel.profile')}>
           <ProfilePanel key={route.nickname} nickname={route.nickname} myId={settings.myPlayerId} />
         </Dock>
       )}
       {route.kind === 'room' && settings.injectLobbyPanel && (
-        <Dock wide title="Sala" link={{ label: 'Análisis completo', hash: `lobby/${encodeURIComponent(route.matchId)}` }}>
+        <Dock wide title={t('panel.room')} link={{ label: t('fullAnalysis'), hash: `lobby/${encodeURIComponent(route.matchId)}` }}>
           <SimpleLobby key={route.matchId} matchId={route.matchId} myPlayerId={settings.myPlayerId} />
         </Dock>
       )}
-    </>
+    </Fragment>
   );
 }
 

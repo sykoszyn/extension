@@ -15,6 +15,7 @@ export const HISTORY_PAGE_SIZE = 100;
 export const MATCH_STATS_PAGE_SIZE = 100;
 
 export const DEFAULT_SETTINGS: Settings = {
+  language: 'auto',
   faceitApiKey: '',
   myNickname: '',
   myPlayerId: '',
@@ -60,11 +61,12 @@ export const MAP_META: Record<string, { label: string; short: string; hue: numbe
 };
 
 export const RESULT_FILTERS = [
-  { key: '7d', label: '7 días', ms: 7 * 86400_000 },
-  { key: '30d', label: '30 días', ms: 30 * 86400_000 },
-  { key: '3m', label: '3 meses', ms: 91 * 86400_000 },
-  { key: '6m', label: '6 meses', ms: 182 * 86400_000 },
-  { key: 'all', label: 'Todo', ms: Infinity },
+  // Labels: i18n keys `period.<key>`.
+  { key: '7d', ms: 7 * 86400_000 },
+  { key: '30d', ms: 30 * 86400_000 },
+  { key: '3m', ms: 91 * 86400_000 },
+  { key: '6m', ms: 182 * 86400_000 },
+  { key: 'all', ms: Infinity },
 ] as const;
 
 export type PeriodKey = (typeof RESULT_FILTERS)[number]['key'];

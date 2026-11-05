@@ -3,8 +3,9 @@ import type { Faction, HistoryMatch, MatchStatLine } from '@shared/types/faceit'
 import { factionOf } from '@shared/utils/analytics';
 import { date, duration, fmt, pct, ratio } from '@shared/utils/format';
 import { mapLabel } from '@shared/utils/maps';
+import { t } from '@shared/i18n';
 import { useRpc } from '../hooks/useRpc';
-import { Card, Empty, ErrorBox, MapBadge, ResultChip, Segmented, Skeleton, Source, Spinner, cx } from './ui';
+import { Card, Empty, ErrorBox, MapBadge, ResultChip, Segmented, Skeleton, Spinner, cx } from './ui';
 
 const PAGE = 20;
 
@@ -22,19 +23,18 @@ export function MatchDetail({ matchId, onOpenPlayer, highlight }: { matchId: str
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-fog-400">
         <span className="font-mono text-fog-500">{m.matchId}</span>
         <span>{date(m.startedAt ?? m.configuredAt, true)}</span>
-        <span>Duración: {duration(m.startedAt, m.finishedAt)}</span>
-        <span>Mapa: {mapLabel(s?.map ?? m.map)}</span>
-        <span>Score: {s?.score ?? '—'}</span>
-        <span title="FACEIT Data API no expone el ELO ganado/perdido por partida">ELO ±: no disponible</span>
+        <span>{t('match.duration')}: {duration(m.startedAt, m.finishedAt)}</span>
+        <span>{t('col.map')}: {mapLabel(s?.map ?? m.map)}</span>
+        <span>{t('col.score')}: {s?.score ?? '—'}</span>
         <a className="st-btn-primary !py-0.5 text-[11px]" href={m.faceitUrl} target="_blank" rel="noreferrer">
-          VER PARTIDA
+          {t('viewMatch')}
         </a>
       </div>
       <div className="grid gap-2 lg:grid-cols-2">
         {factions.map((f) => {
           const roster = m.teams[f];
           const ids = new Set(roster.players.map((p) => p.id));
-          const team = s?.teams.find((t) => t.players.some((p) => ids.has(p.playerId)));
+          const team = s?.teams.find((x) => x.players.some((p) => ids.has(p.playerId)));
           const won = m.winner ? m.winner === f : team?.win ?? null;
           return (
             <div key={f} className="rounded-lg border border-white/[0.06]">
@@ -48,7 +48,7 @@ export function MatchDetail({ matchId, onOpenPlayer, highlight }: { matchId: str
               <table className="st-table w-full text-[12px]">
                 <thead>
                   <tr>
-                    <th>Jugador</th>
+                    <th>{t('col.player')}</th>
                     <th className="!text-right">K</th>
                     <th className="!text-right">D</th>
                     <th className="!text-right">A</th>
@@ -73,7 +73,7 @@ export function MatchDetail({ matchId, onOpenPlayer, highlight }: { matchId: str
                         <td className="text-right">
                           {onOpenPlayer && (
                             <button className="text-[11px] text-ember-400 hover:underline" onClick={() => onOpenPlayer(p.id)}>
-                              Stats
+                              {t('stats')}
                             </button>
                           )}
                         </td>
@@ -86,7 +86,7 @@ export function MatchDetail({ matchId, onOpenPlayer, highlight }: { matchId: str
           );
         })}
       </div>
-      {!s && <p className="text-[11px] text-fog-500">FACEIT no tiene estadísticas para esta partida (cancelada o aún en curso).</p>}
+      {!s && <p className="text-[11px] text-fog-500">{t('match.noStats')}</p>}
     </div>
   );
 }
@@ -119,7 +119,7 @@ export function MatchHistory({ playerId, onOpenPlayer }: { playerId: string; onO
 
   return (
     <Card
-      title="Historial de partidas"
+      title={t('history.title')}
       pad={false}
       right={
         <div className="flex flex-wrap items-center gap-2">
@@ -127,24 +127,24 @@ export function MatchHistory({ playerId, onOpenPlayer }: { playerId: string; onO
             value={result}
             onChange={setResult}
             options={[
-              { key: 'all', label: 'Todas' },
-              { key: 'win', label: 'Victorias' },
-              { key: 'loss', label: 'Derrotas' },
+              { key: 'all', label: t('all') },
+              { key: 'win', label: t('wins') },
+              { key: 'loss', label: t('losses') },
             ]}
           />
-          <select className="st-input !w-auto !py-1" value={map} onChange={(e) => setMap(e.target.value)} aria-label="Filtrar por mapa">
-            <option value="all">Todos los mapas</option>
+          <select className="st-input !w-auto !py-1" value={map} onChange={(e) => setMap(e.target.value)} aria-label={t('history.filterMap')}>
+            <option value="all">{t('history.allMaps')}</option>
             {maps.map((m) => (
               <option key={m} value={m}>
                 {mapLabel(m)}
               </option>
             ))}
           </select>
-          <select className="st-input !w-auto !py-1" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Ordenar">
-            <option value="new">Más recientes</option>
-            <option value="old">Más antiguas</option>
-            <option value="kd">Mejor K/D</option>
-            <option value="adr">Mejor ADR</option>
+          <select className="st-input !w-auto !py-1" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label={t('history.sort')}>
+            <option value="new">{t('history.newest')}</option>
+            <option value="old">{t('history.oldest')}</option>
+            <option value="kd">{t('history.bestKd')}</option>
+            <option value="adr">{t('history.bestAdr')}</option>
           </select>
         </div>
       }
@@ -161,18 +161,18 @@ export function MatchHistory({ playerId, onOpenPlayer }: { playerId: string; onO
         </div>
       ) : !rows.length ? (
         <div className="p-4">
-          <Empty title="Sin partidas" body={offset > 0 ? 'No hay más partidas.' : 'No hay partidas que coincidan con los filtros en esta página.'} />
+          <Empty title={t('history.none')} body={offset > 0 ? t('history.noMore') : t('history.noMatchFilter')} />
         </div>
       ) : (
         <div className="st-scroll overflow-x-auto">
           <table className="st-table w-full text-[12px]">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Mapa</th>
-                <th>Res.</th>
-                <th>Score</th>
-                <th>Equipos</th>
+                <th>{t('col.date')}</th>
+                <th>{t('col.map')}</th>
+                <th>{t('col.result')}</th>
+                <th>{t('col.score')}</th>
+                <th>{t('col.teams')}</th>
                 <th className="!text-right">K-D-A</th>
                 <th className="!text-right">K/D</th>
                 <th className="!text-right">ADR</th>
@@ -204,7 +204,7 @@ export function MatchHistory({ playerId, onOpenPlayer }: { playerId: string; onO
                     <td className="text-right">{pct(line?.hsPercent)}</td>
                     <td className="text-right">
                       <a className="st-btn-ghost !px-2 !py-0.5 text-[11px]" href={m.faceitUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-                        VER PARTIDA
+                        {t('viewMatch')}
                       </a>
                     </td>
                   </tr>
@@ -222,17 +222,15 @@ export function MatchHistory({ playerId, onOpenPlayer }: { playerId: string; onO
         </div>
       )}
       <div className="flex items-center justify-between px-4 py-3">
-        <Source>
-          /players/&#123;id&#125;/history + /games/cs2/stats (stats unidas para las últimas 100 partidas; abre una partida para ver su scoreboard). Filtros y orden aplican a esta página.
-        </Source>
+        <p className="text-[11px] text-fog-500">{t('history.hint')}</p>
         <div className="flex items-center gap-2">
           {history.loading && <Spinner />}
           <button className="st-btn-ghost" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>
-            ← Anterior
+            ← {t('prev')}
           </button>
-          <span className="st-num text-[12px] text-fog-400">Pág. {offset / PAGE + 1}</span>
+          <span className="st-num text-[12px] text-fog-400">{t('page', { n: offset / PAGE + 1 })}</span>
           <button className="st-btn-ghost" disabled={(history.data?.length ?? 0) < PAGE} onClick={() => setOffset(offset + PAGE)}>
-            Siguiente →
+            {t('next')} →
           </button>
         </div>
       </div>

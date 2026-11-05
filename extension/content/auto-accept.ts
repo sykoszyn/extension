@@ -17,8 +17,8 @@ export const ACCEPT_LABELS = ['accept', 'aceptar', 'accepter', 'akzeptieren', 'a
 const DIALOG_SELECTOR = '[role="dialog"], [role="alertdialog"], [aria-modal="true"], [class*="modal" i], [class*="dialog" i], [class*="matchready" i], [class*="match-ready" i]';
 
 export const MATCH_CONTEXT_RE =
-  /(match|partida|partie|spiel|partita|матч)[^.]{0,40}(found|ready|encontrada|lista|trouv|gefunden|pronta|pronto|trovata|найден|готов)|ready\s*check|accept\s+(the\s+)?match|aceptar\s+partida/i;
-export const INVITE_RE = /invit|party|grupo|einladung|приглаш|friend request|solicitud de amistad|join team/i;
+  /(match|partida|partie|spiel|partita|mecz|maç|матч)[^.]{0,40}(found|ready|encontrada|lista|trouv|gefunden|pronta|pronto|trovata|znalezion|gotow|bulundu|hazır|найден|знайден|готов)|ready\s*check|accept\s+(the\s+)?match|aceptar\s+partida/i;
+export const INVITE_RE = /invit|party|grupo|einladung|zaproszen|davet|приглаш|запрош|friend request|solicitud de amistad|join team/i;
 
 const norm = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
 

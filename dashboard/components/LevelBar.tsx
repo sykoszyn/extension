@@ -1,5 +1,6 @@
 import { levelColor } from '@shared/utils/format';
 import { levelProgress } from '@shared/utils/levels';
+import { t } from '@shared/i18n';
 
 /** Thin progress bar: how far the player is inside their FACEIT level. */
 export function LevelBar({ elo, className }: { elo: number | null | undefined; className?: string }) {
@@ -15,17 +16,15 @@ export function LevelBar({ elo, className }: { elo: number | null | undefined; c
         {lp.toNext !== null ? (
           <>
             <span>
-              Faltan <b className="text-fog-100">{lp.toNext}</b> ELO para nivel {lp.nextLevel}
+              <b className="text-fog-100">{lp.toNext}</b> {t('level.toNext', { n: lp.nextLevel ?? '' })}
             </span>
-            <span>
-              −{lp.aboveFloor + 1} para bajar
-            </span>
+            <span>{t('level.toDrop', { n: lp.aboveFloor + 1 })}</span>
           </>
         ) : (
           <>
-            <span>Nivel máximo</span>
+            <span>{t('level.max')}</span>
             <span>
-              <b className="text-fog-100">+{lp.aboveFloor}</b> sobre nivel 10
+              <b className="text-fog-100">+{lp.aboveFloor}</b> {t('level.above10')}
             </span>
           </>
         )}

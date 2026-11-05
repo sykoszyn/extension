@@ -32,4 +32,10 @@ describe('per-browser manifests', () => {
       expect(m.host_permissions).toEqual(['https://open.faceit.com/*', 'https://sykostracker-proxy.me.workers.dev/*']);
     }
   });
+  it('name/description come from _locales (store localisation)', () => {
+    const m = buildManifest('chrome', '1.0.0');
+    expect(m.name).toBe('__MSG_extName__');
+    expect(m.description).toBe('__MSG_extDesc__');
+    expect(m.default_locale).toBe('en');
+  });
 });

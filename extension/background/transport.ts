@@ -16,6 +16,7 @@
 import { FACEIT_API_BASE, RATE_LIMIT } from '@shared/constants';
 import type { Settings } from '@shared/types/settings';
 import { HttpError, RateLimiter } from './rate-limiter';
+import { t } from '@shared/i18n';
 
 export const ALLOWED_PATHS: RegExp[] = [
   /^\/players$/,
@@ -54,7 +55,7 @@ export function buildRequest(settings: Settings, path: string, query: Query, pro
   const { key, source } = resolveKey(settings, proxyUrl);
   if (source === 'user') return { url: `${FACEIT_API_BASE}${path}${qs(query)}`, headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' } };
   if (source === 'proxy') return { url: `${proxyUrl}/data/v4${path}${qs(query)}`, headers: { Accept: 'application/json' } };
-  throw new ConfigError('Esta versión no tiene servidor configurado: añade tu API key de FACEIT en Configuración → Conexión con FACEIT.');
+  throw new ConfigError(t('err.noServer'));
 }
 
 function qs(q: Query): string {
@@ -80,13 +81,13 @@ async function fail(res: Response): Promise<never> {
     /* ignore */
   }
   const human: Record<number, string> = {
-    401: 'FACEIT ha rechazado la clave de API (401). Revisa que la hayas copiado entera y que no esté revocada.',
-    502: 'El servidor de SykosTracker no puede contactar con FACEIT ahora mismo (502). Inténtalo en unos minutos o usa tu propia API key.',
-    403: 'FACEIT ha denegado el acceso (403).',
-    404: 'No encontrado en FACEIT (404).',
-    429: 'Límite de peticiones de FACEIT alcanzado; reintentando…',
+    401: t('err.401'),
+    502: t('err.502'),
+    403: t('err.403'),
+    404: t('err.404'),
+    429: t('err.429'),
   };
-  throw new HttpError(res.status, human[res.status] ?? `Error HTTP ${res.status}${detail ? `: ${detail}` : ''}`, retryAfter(res));
+  throw new HttpError(res.status, human[res.status] ?? `HTTP ${res.status}${detail ? `: ${detail}` : ''}`, retryAfter(res));
 }
 
 export async function faceitGet<T = any>(settings: Settings, path: string, query: Query = {}): Promise<T> {

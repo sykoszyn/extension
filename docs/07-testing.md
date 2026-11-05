@@ -3,7 +3,7 @@
 | Comando | Qué comprueba |
 |---|---|
 | `npm run typecheck` | TypeScript estricto en todo el proyecto (extensión, dashboard, tests) |
-| `npm test` | 66 pruebas unitarias con Vitest |
+| `npm test` | 72 pruebas unitarias con Vitest |
 | `npm run e2e` | 16 comprobaciones end-to-end con la extensión **compilada** (con un proxy de prueba) cargada en Chromium real |
 
 ## Unitarias (`tests/`)
@@ -21,6 +21,7 @@
 | `levels-encounters.test.ts` | Umbrales de nivel (contra pares nivel/ELO reales), encuentros «× vs / × con», sesión de hoy |
 | `proxy.test.ts` | Worker de Cloudflare: reenvío con la clave secreta (sin devolverla), caché, rechazo de rutas, parámetros y métodos no permitidos, rate limit, 401→502, FACEIT caído, orígenes |
 | `transport.test.ts` | Modo público sin clave → proxy y sin `Authorization`; clave propia → directo y con prioridad; sin nada → error claro |
+| `i18n.test.ts` | Los 9 idiomas tienen todas las claves y los mismos `{marcadores}`; toda clave usada en el código existe; detección del idioma; «VS vos»; `_locales` |
 | `settings.test.ts` | Valores por defecto seguros y borrado de los ajustes de backend de versiones anteriores |
 
 ## End-to-end (`scripts/e2e.mjs`)
