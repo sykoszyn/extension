@@ -56,7 +56,19 @@ export interface AcceptEvents {
   onGone(): void;
 }
 
-/** Observes the page and reports match-found prompts (throttled to one check per frame). */
+/**
+ * Schedules a DOM check soon. In a visible tab that's the next frame; in a
+ * background tab or minimized window requestAnimationFrame never fires, so a
+ * plain timer is used instead (otherwise the prompt would go unnoticed until
+ * the user came back to the tab).
+ */
+function soon(doc: Document, fn: () => void) {
+  const win = doc.defaultView;
+  if (!doc.hidden && win?.requestAnimationFrame) win.requestAnimationFrame(fn);
+  else setTimeout(fn, 0);
+}
+
+/** Observes the page and reports match-found prompts (throttled to one check per frame). Works in background tabs too. */
 export function watchMatchFound(doc: Document, ev: AcceptEvents): () => void {
   let current: HTMLElement | null = null;
   let scheduled = false;
@@ -74,7 +86,7 @@ export function watchMatchFound(doc: Document, ev: AcceptEvents): () => void {
   const obs = new MutationObserver(() => {
     if (scheduled) return;
     scheduled = true;
-    requestAnimationFrame(check);
+    soon(doc, check);
   });
   obs.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'aria-hidden', 'disabled'] });
   check();

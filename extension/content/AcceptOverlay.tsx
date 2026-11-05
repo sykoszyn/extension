@@ -5,7 +5,7 @@ import type { AutoAcceptSettings } from '@shared/types/settings';
 import { beep, safeClick, watchMatchFound } from './auto-accept';
 import { t } from '@shared/i18n';
 
-type Phase = { kind: 'idle' } | { kind: 'found'; btn: HTMLElement; left: number } | { kind: 'cancelled' } | { kind: 'accepted' } | { kind: 'manual' };
+type Phase = { kind: 'idle' } | { kind: 'found'; btn: HTMLElement; deadline: number } | { kind: 'cancelled' } | { kind: 'accepted' } | { kind: 'manual' };
 
 /** Countdown / notification toast for match-found prompts. */
 export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
@@ -20,7 +20,7 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
           const s = cfg.current;
           if (s.sound) beep();
           if (s.enabled && s.acknowledged) {
-            setPhase({ kind: 'found', btn, left: s.delaySeconds });
+            setPhase({ kind: 'found', btn, deadline: Date.now() + s.delaySeconds * 1000 });
           } else {
             setPhase({ kind: 'manual' });
             void rpc('notify.matchFound', { accepted: false }).catch(() => undefined);
@@ -33,19 +33,35 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
     [],
   );
 
-  // Countdown tick. Disabling Auto Accept mid-countdown cancels immediately.
+  // Countdown. The click is ONE timer aimed at a wall-clock deadline (not a
+  // chain of 1 s ticks): Chrome throttles chained timers in background tabs
+  // (down to once a minute), but a single short timer still fires on time,
+  // so Auto Accept works with FACEIT in another tab or the window minimized.
+  // Disabling Auto Accept mid-countdown cancels immediately.
+  const deadline = phase.kind === 'found' ? phase.deadline : 0;
   useEffect(() => {
     if (phase.kind !== 'found') return;
     if (!settings.enabled) return setPhase({ kind: 'cancelled' });
-    if (phase.left <= 0) {
-      const ok = safeClick(document, phase.btn);
+    const btn = phase.btn;
+    const fire = () => {
+      const ok = safeClick(document, btn);
       setPhase(ok ? { kind: 'accepted' } : { kind: 'idle' });
       if (ok) void rpc('notify.matchFound', { accepted: true }).catch(() => undefined);
-      return;
-    }
-    const timer = setTimeout(() => setPhase({ ...phase, left: phase.left - 1 }), 1000);
+    };
+    const timer = setTimeout(fire, Math.max(0, deadline - Date.now()));
     return () => clearTimeout(timer);
-  }, [phase, settings.enabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase.kind, deadline, settings.enabled]);
+
+  // Seconds shown on the toast (display only).
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (phase.kind !== 'found') return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [phase.kind, deadline]);
+  const left = Math.max(0, Math.ceil((deadline - now) / 1000));
 
   useEffect(() => {
     if (phase.kind !== 'accepted' && phase.kind !== 'cancelled') return;
@@ -64,7 +80,7 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
             <div className="st-label !text-ember-300">SykosTracker · Auto Accept</div>
             <div className="mt-1 flex items-baseline justify-between">
               <span className="font-display text-[20px] font-bold uppercase">{t('aa.found')}</span>
-              <span className="st-num text-[34px] leading-none text-ember-400">{phase.left}</span>
+              <span className="st-num text-[34px] leading-none text-ember-400">{left}</span>
             </div>
             <div className="mt-3 flex gap-2">
               <button className="st-btn-ghost flex-1" onClick={() => setPhase({ kind: 'cancelled' })}>
@@ -79,7 +95,7 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
               >
                 {t('aa.disable')}
               </button>
-              <button className="st-btn-primary flex-1" onClick={() => setPhase({ ...phase, left: 0 })}>
+              <button className="st-btn-primary flex-1" onClick={() => setPhase({ ...phase, deadline: Date.now() })}>
                 {t('aa.acceptNow')}
               </button>
             </div>

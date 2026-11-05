@@ -136,5 +136,9 @@ Servidor opcional: un Cloudflare Worker sin estado (`proxy/`).
 * **Auto Accept**: depende del HTML de FACEIT (si cambia, no pulsa nada) y su uso
   puede no estar permitido por las condiciones de FACEIT. Lo activas bajo tu
   responsabilidad; por eso viene apagado y en modo aviso.
+  Funciona con FACEIT en otra pestaña o con el navegador minimizado, siempre que
+  la pestaña de FACEIT siga abierta. Si Chrome la «suspende» para ahorrar
+  memoria, no puede hacer nada: agregá `faceit.com` en *Configuración →
+  Rendimiento → Mantener siempre activos estos sitios*.
 * La compatibilidad con la API real no se pudo verificar desde el entorno de
   desarrollo. Ver la nota de la [auditoría](docs/01-auditoria-api.md).

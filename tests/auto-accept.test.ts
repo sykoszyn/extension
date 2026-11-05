@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { findAcceptButton, safeClick } from '@ext/content/auto-accept';
+import { findAcceptButton, safeClick, watchMatchFound } from '@ext/content/auto-accept';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -36,5 +36,20 @@ describe('match-found detection', () => {
     expect(spy).toHaveBeenCalledTimes(1);
     document.body.innerHTML = '';
     expect(safeClick(document, btn)).toBe(false);
+  });
+
+  it('detects the prompt in a background tab / minimized window (no animation frames)', async () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    const raf = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', raf);
+    const found = vi.fn();
+    const stop = watchMatchFound(document, { onFound: found, onGone: () => undefined });
+    document.body.innerHTML = `<div role="dialog">Match found<button>Accept</button></div>`;
+    await new Promise((r) => setTimeout(r, 20));
+    expect(found).toHaveBeenCalledTimes(1);
+    expect(raf).not.toHaveBeenCalled();
+    stop();
+    vi.unstubAllGlobals();
+    delete (document as { hidden?: boolean }).hidden;
   });
 });
