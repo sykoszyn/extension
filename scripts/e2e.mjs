@@ -293,9 +293,10 @@ try {
       await chrome.storage.local.set({ 'sykos.settings': { ...s, faceitApiKey: 'user-own-key' } });
     });
     await dash('settings');
-    await page.getByRole('button', { name: 'Opciones avanzadas' }).click();
-    await page.getByRole('button', { name: 'Guardar y probar' }).click();
-    await page.getByText(/Conexión con FACEIT correcta \(directa con tu API key\)/).waitFor({ timeout: 15000 });
+    // The settings page no longer shows anything about API keys.
+    for (const txt of ['Opciones avanzadas', 'API key', 'Conexión con FACEIT']) assert.equal(await page.getByText(txt).count(), 0, `"${txt}" still shown`);
+    const r = await page.evaluate(() => new Promise((ok) => chrome.runtime.sendMessage({ __sykos: 1, method: 'api.test', params: {} }, ok)));
+    assert.ok(r?.ok && r.data?.ok, 'api.test failed with the own key');
     assert.ok(apiCalls.length >= 1);
     assert.ok(apiCalls.every((c) => c.host === 'open.faceit.com' && c.auth === 'Bearer user-own-key'));
   });

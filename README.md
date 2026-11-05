@@ -8,8 +8,7 @@ Para Chrome, Edge, Brave, Opera y Firefox.
 **Solo tu nickname: sin registro ni cuentas.** Todo funciona dentro de la
 extensión y los datos se guardan en tu navegador. Las consultas a FACEIT pasan
 por un servidor mínimo en Cloudflare que añade la API key del editor (sin
-guardar nada). Quien quiera puede usar su propia key y hablar directamente con
-FACEIT.
+guardar nada). El usuario nunca ve ni configura ninguna key.
 
 > SykosTracker es un proyecto independiente y **no está afiliado a FACEIT ni a
 > Valve**. Todas las estadísticas vienen de la FACEIT Data API oficial. Si un
@@ -26,7 +25,7 @@ FACEIT.
 | **Auto Accept** | faceit.com · popup · Settings | Opcional y **desactivado por defecto**. Hay que aceptar un aviso al activarlo. Acepta **en silencio, sin carteles**, aunque FACEIT esté en otra pestaña o el navegador minimizado. Si está apagado, avisa con notificación y sonido |
 | **Buscador global** | Dashboard y popup | Nickname, URL de FACEIT o ID de partida, con sugerencias, búsquedas recientes y favoritos |
 | **Popup** | Icono de la extensión | Sencillo: tu tarjeta con ELO, WR, K/D, últimas 5 partidas, **barra de progreso al siguiente nivel** y **«Hoy»** (V/D y K/D de hoy), Auto-aceptar y *Ver análisis completo* |
-| **Análisis completo** | Página interna `dashboard/index.html` | Solo 4 secciones: Mi perfil, Comparar jugador (con favoritos y búsquedas), Historial y Ajustes (lo avanzado, plegado) |
+| **Análisis completo** | Página interna `dashboard/index.html` | Solo 4 secciones: Mi perfil, Comparar jugador (con favoritos y búsquedas), Historial y Ajustes (nickname, idioma y partidas; nada de keys) |
 
 ## Inicio rápido
 
