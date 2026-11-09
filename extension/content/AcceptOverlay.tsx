@@ -1,39 +1,43 @@
 import { useEffect, useRef, useState } from 'react';
 import { rpc } from '@shared/rpc';
 import type { AutoAcceptSettings } from '@shared/types/settings';
-import { beep, safeClick, watchMatchFound } from './auto-accept';
+import { beep, findAcceptButton, safeClick, watchMatchFound } from './auto-accept';
 import { t } from '@shared/i18n';
 
-/**
- * Match-found handling.
- *
- *  - Auto Accept ON (enabled + acknowledged by the user): clicks FACEIT's own
- *    "Accept" button silently — no toast, no sound, no notification. It is a
- *    single short timer, so it works with FACEIT in a background tab or the
- *    window minimized.
- *  - Auto Accept OFF: never clicks; shows a small reminder (and, if enabled,
- *    a system notification + sound) so the user can accept by hand.
- */
-const CLICK_DELAY_MS = 300; // let FACEIT finish rendering the dialog
+const CLICK_DELAY_MS = 300;
 
 export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
   const [manual, setManual] = useState(false);
   const cfg = useRef(settings);
-  cfg.current = settings;
+
+  // Mantener siempre actualizada la ref con las settings más recientes
+  useEffect(() => {
+    cfg.current = settings;
+  }, [settings]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
+
     const stop = watchMatchFound(document, {
-      onFound(btn) {
+      onFound(initialBtn) {
         const s = cfg.current;
+
         if (s.enabled && s.acknowledged) {
           clearTimeout(timer);
           timer = setTimeout(() => {
-            // Re-check: the user may have turned it off in the meantime.
-            if (cfg.current.enabled && cfg.current.acknowledged) safeClick(document, btn);
+            // Validar que las opciones sigan activas
+            if (!cfg.current.enabled || !cfg.current.acknowledged) return;
+
+            // Re-obtener el elemento fresco en el DOM justo antes del clic
+            const currentBtn = findAcceptButton(document) || initialBtn;
+            
+            // Intentar el clic con la referencia actualizada
+            safeClick(document, currentBtn);
           }, CLICK_DELAY_MS);
           return;
         }
+
+        // Si auto accept no está activo, mostrar aviso manual
         setManual(true);
         if (s.sound) beep();
         void rpc('notify.matchFound', { accepted: false }).catch(() => undefined);
@@ -43,11 +47,12 @@ export function AcceptOverlay({ settings }: { settings: AutoAcceptSettings }) {
         setManual(false);
       },
     });
+
     return () => {
       clearTimeout(timer);
       stop();
     };
-  }, []);
+  }, []); // Se mantiene [] para no re-suscribir el Observer innecesariamente
 
   if (!manual) return null;
 
